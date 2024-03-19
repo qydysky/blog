@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>snap on qydysky&#39;s blog</title>
+    <link>/tags/snap/</link>
+    <description>Recent content in snap on qydysky&#39;s blog</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>zh-CN</language>
+    <lastBuildDate>Sun, 07 May 2023 23:21:52 +0800</lastBuildDate><atom:link href="/tags/snap/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>letsencrypt证书更新</title>
+      <link>/post/20230507cer/</link>
+      <pubDate>Sun, 07 May 2023 23:21:52 +0800</pubDate>
+      
+      <guid>/post/20230507cer/</guid>
+      <description>这篇文章记录了letsencrypt证书更新过程。</description>
+    </item>
+    
+  </channel>
+</rss>

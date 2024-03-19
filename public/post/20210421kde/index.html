@@ -1,0 +1,479 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    
+
+    <title>Kde应用内链接打开 | qydysky&#39;s blog</title>
+    <meta property="og:title" content="Kde应用内链接打开 - qydysky&#39;s blog">
+    <meta property="og:type" content="article">
+        
+    <meta property="article:published_time" content='2021-04-21T19:34:12&#43;08:00'>
+        
+        
+    <meta property="article:modified_time" content='2021-04-21T19:34:12&#43;08:00'>
+        
+    <meta name="Keywords" content="qydysky,blog">
+    <meta name="description" content="Kde应用内链接打开">
+        
+    <meta name="author" content="qydysky">
+    <meta property="og:url" content="/post/20210421kde/">
+    <link rel="shortcut icon" href='/favicon.ico'  type="image/x-icon">
+
+    <link rel="stylesheet" href='/css/normalize.css'>
+    <link rel="stylesheet" href='/css/style.css'>
+
+    
+        <link rel="stylesheet" href="/main.15dcb265081424711307094b8e6324bd.css" integrity="md5-FdyyZQgUJHETBwlLjmMkvQ==">
+    
+
+    <script type="text/javascript" src="/js/jquery/3.6.0/jquery.min.js"></script>
+
+    
+        <script src="/main.1237e059eab46d4c84e9924e8e2ec11f.js" integrity="md5-EjfgWeq0bUyE6ZJOji7BHw=="></script>
+    
+    
+    
+    
+    
+    
+    
+    
+</head>
+
+
+<body>
+    <header id="header" class="clearfix">
+    <div class="container">
+        <div class="col-group">
+            <div class="site-name ">
+                
+                    <a id="logo" href="/">
+                        qydysky&#39;s blog
+                    </a>
+                
+                <p class="description">日常记录</p>
+            </div>
+            <div>
+                <nav id="nav-menu" class="clearfix">
+                    <a class="current" href="/">首页</a>
+                    
+                    <a  href="/tags/" title="标签">标签</a>
+                    
+                    <a  href="/archives/" title="归档">归档</a>
+                    
+                    <a  href="/search/" title="查找">查找</a>
+                    
+                    <a  href="/about/" title="关于">关于</a>
+                    
+                </nav>
+            </div>
+        </div>
+    </div>
+</header>
+
+    <div id="body">
+        <div class="container">
+            <div class="col-group">
+
+                <div class="col-8" id="main">
+                    
+<div class="res-cons">
+    <article class="post">
+        <header>
+            <h1 class="post-title">Kde应用内链接打开</h1>
+        </header>
+        <date class="post-meta meta-date">
+            2021年4月21日
+        </date>
+        
+        
+        <div class="post-meta meta-tags">
+            
+            <ul class="clearfix">
+                
+                <li><a href='/tags/kde'>kde</a></li>
+                
+                <li><a href='/tags/url'>url</a></li>
+                
+                <li><a href='/tags/kioexec'>kioexec</a></li>
+                
+            </ul>
+            
+        </div>
+        
+        <div class="clear" style="display: none">
+            <div class="toc-article">
+                <div class="toc-title">文章目录</div>
+            </div>
+        </div>
+        
+        <div class="post-content">
+            <h3 id="简介">简介</h3>
+<p>最近我的debian从10更新到了11,对应的kde也进行了更新。但后来发生了应用内打开链接表现为kioexec下载该链接之后再浏览器打开本地页面，与之前直接调用浏览器打开链接不同。本文记录了这个情况解决的详情。</p>
+<p>这个问题相关的提问在网上：<a href="https://www.google.com/search?q=kde+open+link+kioexec+copy">kde open link kioexec copy</a></p>
+<h3 id="情况复现">情况复现</h3>
+<p>本文使用firefox进行测试。由于firefox默认下载压缩包，而后直接运行目录下的<code>firefox</code>启动。</p>
+<p>在<code>设置</code>-<code>应用程序</code>-<code>默认程序</code>-<code>网页浏览器</code>中选择其他，选择上述文件，确定并应用。</p>
+<p>然后在应用内打开，此处使用命令行。在命令行中输入<code>echo 'https://baidu.com'</code>回车后，将显示该网址。如果你使用的是<code>Konsole</code>时，你可以使用<code>ctrl+左键</code>打开此链接。</p>
+<p>此时会弹出通知，显示kioexec正在拷贝此网页到<code>~/.cache/kioexec/...</code>中，当它拷贝完成后，将会调用firefox打开本文件。此时浏览器显示地址为<code>file://</code>开头的文件。</p>
+<h3 id="详细分析">详细分析</h3>
+<p>找到设置默认程序的配置文件目录<code>/home/qydysky/.local/share/applications</code>，此处用户名为<code>qydysky</code>。找到对应的<code>desltop</code>文件。</p>
+<pre tabindex="0"><code class="language-desktop" data-lang="desktop">[Desktop Entry]
+Exec=/home/qydysky/程序/filefox/firefox/firefox
+MimeType=x-scheme-handler/http;
+Name=firefox
+NoDisplay=true
+Type=Application
+</code></pre><h3 id="问题解决">问题解决</h3>
+<p>后来发现，当设置为<code>chrome</code>时，可以顺利的调用打开。于是，改变思路，在kde程序列表中添加firefox。</p>
+<p><strong>注意：如果如何怎么更改都无法起效，考虑重启kde，即重启电脑</strong></p>
+<p>在应用列表中空白处右键，编辑应用列表，这将打开kde菜单编辑器<code>kmenuedit</code>。</p>
+<p>查看<code>网络</code>中chrome中的配置，将看到<code>命令</code>项为<code>/usr/bin/google-chrome-stable %U</code>。</p>
+<p>在里面的<code>网络</code>中添加firefox。模仿chrome，将命令设置为<code>/home/qydysky/程序/filefox/firefox/firefox %U</code>，然后即可在上述选择默认程序时找到firefox。应用后发现有效，之后应用内打开链接将直接调用firefox。</p>
+<h3 id="差异分析">差异分析</h3>
+<p>再次在<code>/home/qydysky/.local/share/applications</code>中查看配置文件。可以发现，新的配置文件如下：</p>
+<pre tabindex="0"><code class="language-desktop" data-lang="desktop">[Desktop Entry]
+Comment=访问互联网
+Exec=/home/qydysky/程序/filefox/firefox/firefox %U
+GenericName=网页浏览器
+Icon=/home/qydysky/程序/filefox/firefox/browser/chrome/icons/default/default128.png
+Name=Firfox
+NoDisplay=false
+Path[$e]=
+StartupNotify=true
+Terminal=0
+TerminalOptions=
+Type=Application
+X-KDE-SubstituteUID=false
+X-KDE-Username=
+</code></pre><p>由此，即可得到结论，当命令后没有<code>%U</code>时，将调用<code>kioexec</code>。通过更改详细分析一节中的配置文件，并启用它后，发现结论得到验证。</p>
+<h3 id="更多文件关联">更多文件关联</h3>
+<p>在设置默认程序时，可以看到<code>x-scheme-handler/https</code>的字样。这在<code>文件关联</code>中可以找到，如果找不到，则可以添加。添加组编辑为<code>x-scheme-handler</code>，类型名为<code>https</code>。然后即可找到程序优先顺序。</p>
+
+        </div>
+
+        
+<div class="post-archive">
+    <ul class="post-copyright">
+        <li><strong>原文作者：</strong><a rel="author" href="/">qydysky</a></li>
+        <li style="word-break:break-all"><strong>原文链接：</strong><a href="/post/20210421kde/">/post/20210421kde/</a></li>
+        <li><strong>版权声明：</strong>本作品采用<a rel="license" href="https://creativecommons.org/licenses/by-nc-nd/4.0/">知识共享署名-非商业性使用-禁止演绎 4.0 国际许可协议</a>进行许可，非商业转载请注明出处（作者，原文链接），商业转载请联系作者获得授权。</li>
+    </ul>
+</div>
+<br/>
+
+
+
+        
+
+<div class="post-archive">
+    <h2 class="related-title">更多</h2>
+    <ul class="listing">
+        
+        <li><a href="/post/20210416flv-golang/">flv文件解析及golang的流实现</a></li>
+        
+        <li><a href="/post/20210406aria2/">aria2缓冲区</a></li>
+        
+        <li><a href="/post/20210402debain/">Debian音量控制</a></li>
+        
+        <li><a href="/post/20210331caddy/">Caddy的配置与运行</a></li>
+        
+        <li><a href="/post/20210331hexo/">hexo安装、配置及博客生成全流程</a></li>
+        
+    </ul>
+</div>
+
+
+    </article>
+    
+    
+
+    
+    
+</div>
+
+                    <footer id="footer">
+    <div>
+        &copy; 2024 <a href="/">qydysky&#39;s blog By qydysky</a>
+        
+    </div>
+    <br />
+    <div>
+        <a href="https://icp.gov.moe/?keyword=20240909" target="_blank">萌ICP备20240909号</a>
+    </div>
+    <br />
+    <div>
+        <div class="github-badge">
+            <a href="https://gohugo.io/" target="_black" rel="nofollow"><span class="badge-subject">Powered by</span><span class="badge-value bg-blue">Hugo</span></a>
+        </div>
+        <div class="github-badge">
+            <a href="https://github.com/flysnow-org/maupassant-hugo" target="_black"><span class="badge-subject">Theme</span><span class="badge-value bg-yellowgreen">Maupassant</span></a>
+        </div>
+    </div>
+</footer>
+
+
+    
+    <script type="text/javascript">
+        window.MathJax = {
+            tex2jax: {
+                inlineMath: [['$', '$']],
+                processEscapes: true
+                }
+            };
+    </script>
+    <script src='/js/mathjax/2.7.5/MathJax.js?config=TeX-MML-AM_CHTML' async></script>
+
+<a id="rocket" href="#top"></a>
+<script type="text/javascript" src='/js/totop.js?v=0.0.0' async=""></script>
+
+
+
+
+
+
+                </div>
+
+                <div id="secondary">
+    <section class="widget">
+        <form id="search" action='/search/' method="get" accept-charset="utf-8" target="_blank" _lpchecked="1">
+      
+      <input type="text" name="q" maxlength="20" placeholder="Search">
+      <input type="hidden" name="sitesearch" value="/">
+      <button type="submit" class="submit icon-search"></button>
+</form>
+    </section>
+    
+    
+
+    <section class="widget">
+        <h3 class="widget-title"><a href='/tags/'>标签</a></h3>
+<div class="tagcloud">
+    
+    <a href="/tags/Caddy/">Caddy</a>
+    
+    <a href="/tags/amixer/">amixer</a>
+    
+    <a href="/tags/ap/">ap</a>
+    
+    <a href="/tags/aria2/">aria2</a>
+    
+    <a href="/tags/c/">c</a>
+    
+    <a href="/tags/canvas/">canvas</a>
+    
+    <a href="/tags/certbot/">certbot</a>
+    
+    <a href="/tags/crontab/">crontab</a>
+    
+    <a href="/tags/docker/">docker</a>
+    
+    <a href="/tags/ffmpeg/">ffmpeg</a>
+    
+    <a href="/tags/flv/">flv</a>
+    
+    <a href="/tags/fmp4/">fmp4</a>
+    
+    <a href="/tags/frp/">frp</a>
+    
+    <a href="/tags/gateway/">gateway</a>
+    
+    <a href="/tags/golang/">golang</a>
+    
+    <a href="/tags/hexo/">hexo</a>
+    
+    <a href="/tags/javascript/">javascript</a>
+    
+    <a href="/tags/kde/">kde</a>
+    
+    <a href="/tags/kioexec/">kioexec</a>
+    
+    <a href="/tags/l4d2/">l4d2</a>
+    
+    <a href="/tags/legado/">legado</a>
+    
+    <a href="/tags/letsencrypt/">letsencrypt</a>
+    
+    <a href="/tags/linux/">linux</a>
+    
+    <a href="/tags/mock/">mock</a>
+    
+    <a href="/tags/mp4/">mp4</a>
+    
+    <a href="/tags/mysql/">mysql</a>
+    
+    <a href="/tags/ncurses/">ncurses</a>
+    
+    <a href="/tags/nodejs/">nodejs</a>
+    
+    <a href="/tags/nvm/">nvm</a>
+    
+    <a href="/tags/oracle/">oracle</a>
+    
+    <a href="/tags/plugin/">plugin</a>
+    
+    <a href="/tags/pocketbase/">pocketbase</a>
+    
+    <a href="/tags/regExp/">regExp</a>
+    
+    <a href="/tags/sh/">sh</a>
+    
+    <a href="/tags/shell/">shell</a>
+    
+    <a href="/tags/snap/">snap</a>
+    
+    <a href="/tags/sourcemod/">sourcemod</a>
+    
+    <a href="/tags/spring/">spring</a>
+    
+    <a href="/tags/truenas/">truenas</a>
+    
+    <a href="/tags/url/">url</a>
+    
+    <a href="/tags/vs/">vs</a>
+    
+    <a href="/tags/vue-element-admin/">vue-element-admin</a>
+    
+    <a href="/tags/wifi7/">wifi7</a>
+    
+    <a href="/tags/xiaomi/">xiaomi</a>
+    
+    <a href="/tags/%E6%97%A5%E5%B8%B8/">日常</a>
+    
+</div>
+    </section>
+
+    
+<section class="widget">
+    <h3 class="widget-title">友情链接</h3>
+    <ul class="widget-list">
+        
+        <li>
+            <a target="_blank" href="https://vcb-s.com/" title="VCB-Studio">VCB-Studio</a>
+        </li>
+        
+    </ul>
+</section>
+
+
+    <section class="widget">
+        <h3 class="widget-title">其它</h3>
+        <ul class="widget-list">
+            <li><a href="/index.xml">文章 RSS</a></li>
+        </ul>
+    </section>
+
+    <style type="text/css">
+    .post-toc {
+        max-width: 100%;
+        max-height: 80%;
+        font-family: Athelas, STHeiti, Microsoft Yahei, serif;
+        font-size: 12px;
+        word-wrap: break-word;
+        white-space: nowrap;
+        z-index: 999;
+        cursor: pointer;
+    }
+
+    .post-toc .post-toc-title {
+        color: #6E7173;
+        line-height: 2.7;
+        margin-top: 0;
+        font-size: 16px;
+        border-bottom: 1px solid #ddd;
+        display: block;
+    }
+
+    .post-toc .post-toc-content {
+        font-size: 15px;
+    }
+
+    .post-toc .post-toc-content>nav>ul {
+        margin: 10px 0;
+        margin-block: 0.5rem;
+        padding-inline: 0.1rem;
+    }
+
+    .post-toc .post-toc-content ul {
+        list-style: none;
+        line-height: 1.8em;
+    }
+
+    .post-toc .post-toc-content ul ul {
+        padding-left: 15px;
+        font-size: 0.8rem;
+    }
+
+    @media print,
+    screen and (max-width:1057px) {
+        .post-toc {
+            display: none;
+        }
+    }
+</style>
+<div class="post-toc">
+    <h2 class="post-toc-title">目录</h2>
+    <div class="post-toc-content">
+        <nav id="TableOfContents">
+  <ul>
+    <li>
+      <ul>
+        <li>
+          <ul>
+            <li><a href="#简介">简介</a></li>
+            <li><a href="#情况复现">情况复现</a></li>
+            <li><a href="#详细分析">详细分析</a></li>
+            <li><a href="#问题解决">问题解决</a></li>
+            <li><a href="#差异分析">差异分析</a></li>
+            <li><a href="#更多文件关联">更多文件关联</a></li>
+          </ul>
+        </li>
+      </ul>
+    </li>
+  </ul>
+</nav>
+    </div>
+</div>
+<script type="text/javascript">
+    $(document).ready(function () {
+        var postToc = $(".post-toc");
+        if (postToc.length) {
+
+            var t = postToc.offset().top - 20,
+                a = {
+                    start: {
+                        position: "unset",
+                        top: "unset",
+                        overflow: "unset",
+                        paddingRight: "unset"
+                    },
+                    process: {
+                        position: "fixed",
+                        top: 20,
+                        overflow: "hidden auto",
+                        paddingRight: "5em"
+                    },
+                };
+
+            var e = $(window).scrollTop();
+            e < t ? postToc.css(a.start) : postToc.css(a.process)
+
+            $(window).scroll(function () {
+                var e = $(window).scrollTop();
+                e < t ? postToc.css(a.start) : postToc.css(a.process)
+            })
+        }
+    })
+</script>
+    
+</div>
+            </div>
+        </div>
+    </div>
+</body>
+
+</html>

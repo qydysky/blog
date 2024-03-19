@@ -1,0 +1,416 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Tags on qydysky&#39;s blog</title>
+    <link>/tags/</link>
+    <description>Recent content in Tags on qydysky&#39;s blog</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>zh-CN</language>
+    <lastBuildDate>Wed, 13 Mar 2024 02:20:10 +0800</lastBuildDate><atom:link href="/tags/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>legado</title>
+      <link>/tags/legado/</link>
+      <pubDate>Wed, 13 Mar 2024 02:20:10 +0800</pubDate>
+      
+      <guid>/tags/legado/</guid>
+      <description></description>
+    </item>
+    
+    <item>
+      <title>pocketbase</title>
+      <link>/tags/pocketbase/</link>
+      <pubDate>Wed, 13 Mar 2024 02:20:10 +0800</pubDate>
+      
+      <guid>/tags/pocketbase/</guid>
+      <description></description>
+    </item>
+    
+    <item>
+      <title>ap</title>
+      <link>/tags/ap/</link>
+      <pubDate>Sun, 03 Mar 2024 16:20:10 +0800</pubDate>
+      
+      <guid>/tags/ap/</guid>
+      <description></description>
+    </item>
+    
+    <item>
+      <title>wifi7</title>
+      <link>/tags/wifi7/</link>
+      <pubDate>Sun, 03 Mar 2024 16:20:10 +0800</pubDate>
+      
+      <guid>/tags/wifi7/</guid>
+      <description></description>
+    </item>
+    
+    <item>
+      <title>xiaomi</title>
+      <link>/tags/xiaomi/</link>
+      <pubDate>Sun, 03 Mar 2024 16:20:10 +0800</pubDate>
+      
+      <guid>/tags/xiaomi/</guid>
+      <description></description>
+    </item>
+    
+    <item>
+      <title>ffmpeg</title>
+      <link>/tags/ffmpeg/</link>
+      <pubDate>Sat, 17 Feb 2024 22:20:10 +0800</pubDate>
+      
+      <guid>/tags/ffmpeg/</guid>
+      <description></description>
+    </item>
+    
+    <item>
+      <title>kde</title>
+      <link>/tags/kde/</link>
+      <pubDate>Sat, 17 Feb 2024 22:20:10 +0800</pubDate>
+      
+      <guid>/tags/kde/</guid>
+      <description></description>
+    </item>
+    
+    <item>
+      <title>linux</title>
+      <link>/tags/linux/</link>
+      <pubDate>Sat, 17 Feb 2024 22:20:10 +0800</pubDate>
+      
+      <guid>/tags/linux/</guid>
+      <description></description>
+    </item>
+    
+    <item>
+      <title>truenas</title>
+      <link>/tags/truenas/</link>
+      <pubDate>Sun, 18 Jun 2023 20:27:52 +0800</pubDate>
+      
+      <guid>/tags/truenas/</guid>
+      <description></description>
+    </item>
+    
+    <item>
+      <title>crontab</title>
+      <link>/tags/crontab/</link>
+      <pubDate>Thu, 11 May 2023 20:27:52 +0800</pubDate>
+      
+      <guid>/tags/crontab/</guid>
+      <description></description>
+    </item>
+    
+    <item>
+      <title>certbot</title>
+      <link>/tags/certbot/</link>
+      <pubDate>Sun, 07 May 2023 23:21:52 +0800</pubDate>
+      
+      <guid>/tags/certbot/</guid>
+      <description></description>
+    </item>
+    
+    <item>
+      <title>letsencrypt</title>
+      <link>/tags/letsencrypt/</link>
+      <pubDate>Sun, 07 May 2023 23:21:52 +0800</pubDate>
+      
+      <guid>/tags/letsencrypt/</guid>
+      <description></description>
+    </item>
+    
+    <item>
+      <title>snap</title>
+      <link>/tags/snap/</link>
+      <pubDate>Sun, 07 May 2023 23:21:52 +0800</pubDate>
+      
+      <guid>/tags/snap/</guid>
+      <description></description>
+    </item>
+    
+    <item>
+      <title>fmp4</title>
+      <link>/tags/fmp4/</link>
+      <pubDate>Tue, 25 Oct 2022 11:06:00 +0800</pubDate>
+      
+      <guid>/tags/fmp4/</guid>
+      <description></description>
+    </item>
+    
+    <item>
+      <title>mp4</title>
+      <link>/tags/mp4/</link>
+      <pubDate>Tue, 25 Oct 2022 11:06:00 +0800</pubDate>
+      
+      <guid>/tags/mp4/</guid>
+      <description></description>
+    </item>
+    
+    <item>
+      <title>l4d2</title>
+      <link>/tags/l4d2/</link>
+      <pubDate>Mon, 28 Mar 2022 13:20:10 +0800</pubDate>
+      
+      <guid>/tags/l4d2/</guid>
+      <description></description>
+    </item>
+    
+    <item>
+      <title>plugin</title>
+      <link>/tags/plugin/</link>
+      <pubDate>Mon, 28 Mar 2022 13:20:10 +0800</pubDate>
+      
+      <guid>/tags/plugin/</guid>
+      <description></description>
+    </item>
+    
+    <item>
+      <title>sourcemod</title>
+      <link>/tags/sourcemod/</link>
+      <pubDate>Mon, 28 Mar 2022 13:20:10 +0800</pubDate>
+      
+      <guid>/tags/sourcemod/</guid>
+      <description></description>
+    </item>
+    
+    <item>
+      <title>gateway</title>
+      <link>/tags/gateway/</link>
+      <pubDate>Sun, 20 Mar 2022 13:20:10 +0800</pubDate>
+      
+      <guid>/tags/gateway/</guid>
+      <description></description>
+    </item>
+    
+    <item>
+      <title>sh</title>
+      <link>/tags/sh/</link>
+      <pubDate>Sun, 20 Mar 2022 13:20:10 +0800</pubDate>
+      
+      <guid>/tags/sh/</guid>
+      <description></description>
+    </item>
+    
+    <item>
+      <title>regExp</title>
+      <link>/tags/regExp/</link>
+      <pubDate>Thu, 03 Mar 2022 00:23:00 +0800</pubDate>
+      
+      <guid>/tags/regExp/</guid>
+      <description></description>
+    </item>
+    
+    <item>
+      <title>frp</title>
+      <link>/tags/frp/</link>
+      <pubDate>Wed, 23 Feb 2022 21:04:00 +0800</pubDate>
+      
+      <guid>/tags/frp/</guid>
+      <description></description>
+    </item>
+    
+    <item>
+      <title>docker</title>
+      <link>/tags/docker/</link>
+      <pubDate>Thu, 21 Oct 2021 15:43:00 +0800</pubDate>
+      
+      <guid>/tags/docker/</guid>
+      <description></description>
+    </item>
+    
+    <item>
+      <title>canvas</title>
+      <link>/tags/canvas/</link>
+      <pubDate>Sun, 17 Oct 2021 21:08:00 +0800</pubDate>
+      
+      <guid>/tags/canvas/</guid>
+      <description></description>
+    </item>
+    
+    <item>
+      <title>javascript</title>
+      <link>/tags/javascript/</link>
+      <pubDate>Sun, 17 Oct 2021 21:08:00 +0800</pubDate>
+      
+      <guid>/tags/javascript/</guid>
+      <description></description>
+    </item>
+    
+    <item>
+      <title>日常</title>
+      <link>/tags/%E6%97%A5%E5%B8%B8/</link>
+      <pubDate>Fri, 15 Oct 2021 11:06:00 +0800</pubDate>
+      
+      <guid>/tags/%E6%97%A5%E5%B8%B8/</guid>
+      <description></description>
+    </item>
+    
+    <item>
+      <title>spring</title>
+      <link>/tags/spring/</link>
+      <pubDate>Tue, 12 Oct 2021 14:14:00 +0800</pubDate>
+      
+      <guid>/tags/spring/</guid>
+      <description></description>
+    </item>
+    
+    <item>
+      <title>mock</title>
+      <link>/tags/mock/</link>
+      <pubDate>Wed, 06 Oct 2021 14:08:00 +0800</pubDate>
+      
+      <guid>/tags/mock/</guid>
+      <description></description>
+    </item>
+    
+    <item>
+      <title>nodejs</title>
+      <link>/tags/nodejs/</link>
+      <pubDate>Wed, 06 Oct 2021 14:08:00 +0800</pubDate>
+      
+      <guid>/tags/nodejs/</guid>
+      <description></description>
+    </item>
+    
+    <item>
+      <title>nvm</title>
+      <link>/tags/nvm/</link>
+      <pubDate>Wed, 06 Oct 2021 14:08:00 +0800</pubDate>
+      
+      <guid>/tags/nvm/</guid>
+      <description></description>
+    </item>
+    
+    <item>
+      <title>vue-element-admin</title>
+      <link>/tags/vue-element-admin/</link>
+      <pubDate>Wed, 06 Oct 2021 14:08:00 +0800</pubDate>
+      
+      <guid>/tags/vue-element-admin/</guid>
+      <description></description>
+    </item>
+    
+    <item>
+      <title>mysql</title>
+      <link>/tags/mysql/</link>
+      <pubDate>Mon, 04 Oct 2021 13:20:10 +0800</pubDate>
+      
+      <guid>/tags/mysql/</guid>
+      <description></description>
+    </item>
+    
+    <item>
+      <title>oracle</title>
+      <link>/tags/oracle/</link>
+      <pubDate>Mon, 04 Oct 2021 13:20:10 +0800</pubDate>
+      
+      <guid>/tags/oracle/</guid>
+      <description></description>
+    </item>
+    
+    <item>
+      <title>vs</title>
+      <link>/tags/vs/</link>
+      <pubDate>Sat, 04 Sep 2021 00:00:00 +0000</pubDate>
+      
+      <guid>/tags/vs/</guid>
+      <description></description>
+    </item>
+    
+    <item>
+      <title>c</title>
+      <link>/tags/c/</link>
+      <pubDate>Mon, 17 May 2021 15:17:25 +0800</pubDate>
+      
+      <guid>/tags/c/</guid>
+      <description></description>
+    </item>
+    
+    <item>
+      <title>ncurses</title>
+      <link>/tags/ncurses/</link>
+      <pubDate>Mon, 17 May 2021 15:17:25 +0800</pubDate>
+      
+      <guid>/tags/ncurses/</guid>
+      <description></description>
+    </item>
+    
+    <item>
+      <title>shell</title>
+      <link>/tags/shell/</link>
+      <pubDate>Mon, 17 May 2021 15:17:25 +0800</pubDate>
+      
+      <guid>/tags/shell/</guid>
+      <description></description>
+    </item>
+    
+    <item>
+      <title>golang</title>
+      <link>/tags/golang/</link>
+      <pubDate>Sun, 25 Apr 2021 14:05:29 +0000</pubDate>
+      
+      <guid>/tags/golang/</guid>
+      <description></description>
+    </item>
+    
+    <item>
+      <title>kioexec</title>
+      <link>/tags/kioexec/</link>
+      <pubDate>Wed, 21 Apr 2021 19:34:12 +0000</pubDate>
+      
+      <guid>/tags/kioexec/</guid>
+      <description></description>
+    </item>
+    
+    <item>
+      <title>url</title>
+      <link>/tags/url/</link>
+      <pubDate>Wed, 21 Apr 2021 19:34:12 +0000</pubDate>
+      
+      <guid>/tags/url/</guid>
+      <description></description>
+    </item>
+    
+    <item>
+      <title>flv</title>
+      <link>/tags/flv/</link>
+      <pubDate>Fri, 16 Apr 2021 00:00:00 +0000</pubDate>
+      
+      <guid>/tags/flv/</guid>
+      <description></description>
+    </item>
+    
+    <item>
+      <title>aria2</title>
+      <link>/tags/aria2/</link>
+      <pubDate>Tue, 06 Apr 2021 00:00:00 +0000</pubDate>
+      
+      <guid>/tags/aria2/</guid>
+      <description></description>
+    </item>
+    
+    <item>
+      <title>amixer</title>
+      <link>/tags/amixer/</link>
+      <pubDate>Fri, 02 Apr 2021 00:00:00 +0000</pubDate>
+      
+      <guid>/tags/amixer/</guid>
+      <description></description>
+    </item>
+    
+    <item>
+      <title>Caddy</title>
+      <link>/tags/Caddy/</link>
+      <pubDate>Wed, 31 Mar 2021 00:00:00 +0000</pubDate>
+      
+      <guid>/tags/Caddy/</guid>
+      <description></description>
+    </item>
+    
+    <item>
+      <title>hexo</title>
+      <link>/tags/hexo/</link>
+      <pubDate>Wed, 31 Mar 2021 00:00:00 +0000</pubDate>
+      
+      <guid>/tags/hexo/</guid>
+      <description></description>
+    </item>
+    
+  </channel>
+</rss>

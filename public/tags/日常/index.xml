@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>日常 on qydysky&#39;s blog</title>
+    <link>/tags/%E6%97%A5%E5%B8%B8/</link>
+    <description>Recent content in 日常 on qydysky&#39;s blog</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>zh-CN</language>
+    <lastBuildDate>Fri, 15 Oct 2021 11:06:00 +0800</lastBuildDate><atom:link href="/tags/%E6%97%A5%E5%B8%B8/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>常见错误总结</title>
+      <link>/post/20211015error/</link>
+      <pubDate>Fri, 15 Oct 2021 11:06:00 +0800</pubDate>
+      
+      <guid>/post/20211015error/</guid>
+      <description>本文记录了常见错误类型，已降低自己写bug的能力。</description>
+    </item>
+    
+    <item>
+      <title>一些新点子</title>
+      <link>/post/20210504idea/</link>
+      <pubDate>Tue, 04 May 2021 20:10:52 +0800</pubDate>
+      
+      <guid>/post/20210504idea/</guid>
+      <description>这篇文章记录了一些奇思妙想，或许有一天会着手实现。</description>
+    </item>
+    
+  </channel>
+</rss>

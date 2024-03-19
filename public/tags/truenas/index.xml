@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>truenas on qydysky&#39;s blog</title>
+    <link>/tags/truenas/</link>
+    <description>Recent content in truenas on qydysky&#39;s blog</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>zh-CN</language>
+    <lastBuildDate>Sun, 18 Jun 2023 20:27:52 +0800</lastBuildDate><atom:link href="/tags/truenas/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>TrueNas折腾记</title>
+      <link>/post/20230618truenas/</link>
+      <pubDate>Sun, 18 Jun 2023 20:27:52 +0800</pubDate>
+      
+      <guid>/post/20230618truenas/</guid>
+      <description>这篇文章是关于TrueNas折腾的备忘。</description>
+    </item>
+    
+  </channel>
+</rss>

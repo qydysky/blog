@@ -1,0 +1,847 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    
+
+    <title>aria2缓冲区 | qydysky&#39;s blog</title>
+    <meta property="og:title" content="aria2缓冲区 - qydysky&#39;s blog">
+    <meta property="og:type" content="article">
+        
+    <meta property="article:published_time" content='2021-04-06T00:00:00&#43;08:00'>
+        
+        
+    <meta property="article:modified_time" content='2021-04-06T00:00:00&#43;08:00'>
+        
+    <meta name="Keywords" content="qydysky,blog">
+    <meta name="description" content="aria2缓冲区">
+        
+    <meta name="author" content="qydysky">
+    <meta property="og:url" content="/post/20210406aria2/">
+    <link rel="shortcut icon" href='/favicon.ico'  type="image/x-icon">
+
+    <link rel="stylesheet" href='/css/normalize.css'>
+    <link rel="stylesheet" href='/css/style.css'>
+
+    
+        <link rel="stylesheet" href="/main.15dcb265081424711307094b8e6324bd.css" integrity="md5-FdyyZQgUJHETBwlLjmMkvQ==">
+    
+
+    <script type="text/javascript" src="/js/jquery/3.6.0/jquery.min.js"></script>
+
+    
+        <script src="/main.1237e059eab46d4c84e9924e8e2ec11f.js" integrity="md5-EjfgWeq0bUyE6ZJOji7BHw=="></script>
+    
+    
+    
+    
+    
+    
+    
+    
+</head>
+
+
+<body>
+    <header id="header" class="clearfix">
+    <div class="container">
+        <div class="col-group">
+            <div class="site-name ">
+                
+                    <a id="logo" href="/">
+                        qydysky&#39;s blog
+                    </a>
+                
+                <p class="description">日常记录</p>
+            </div>
+            <div>
+                <nav id="nav-menu" class="clearfix">
+                    <a class="current" href="/">首页</a>
+                    
+                    <a  href="/tags/" title="标签">标签</a>
+                    
+                    <a  href="/archives/" title="归档">归档</a>
+                    
+                    <a  href="/search/" title="查找">查找</a>
+                    
+                    <a  href="/about/" title="关于">关于</a>
+                    
+                </nav>
+            </div>
+        </div>
+    </div>
+</header>
+
+    <div id="body">
+        <div class="container">
+            <div class="col-group">
+
+                <div class="col-8" id="main">
+                    
+<div class="res-cons">
+    <article class="post">
+        <header>
+            <h1 class="post-title">aria2缓冲区</h1>
+        </header>
+        <date class="post-meta meta-date">
+            2021年4月6日
+        </date>
+        
+        
+        <div class="post-meta meta-tags">
+            
+            <ul class="clearfix">
+                
+                <li><a href='/tags/aria2'>aria2</a></li>
+                
+            </ul>
+            
+        </div>
+        
+        <div class="clear" style="display: none">
+            <div class="toc-article">
+                <div class="toc-title">文章目录</div>
+            </div>
+        </div>
+        
+        <div class="post-content">
+            <h3 id="简介">简介</h3>
+<p><a href="https://aria2.github.io/">Aria2</a>是一款优秀的C++开源下载器，但它已经好久没有更新，本文记录解决其接收缓冲区过大导致下载开始时出现限速失效的过程。</p>
+<h3 id="问题提出">问题提出</h3>
+<p>在<a href="https://github.com/aria2/aria2/issues/1755">issue1</a>中提出，当<code>socket-recv-buffer-size</code>较大而<code>max-overall-download-limit</code>较小时，下载开始时缓冲区还未填满，此时会出现满速下载情况，而后虽然aria2从缓冲区读取的速率会降低到指定速率，但是内容全部已经下载到缓冲区，实际并没实现限速。表现为先满速下载而后完成速度归零。</p>
+<p>其中关于<code>socket-recv-buffer-size</code>，若没使用aria2进行设置，使用系统默认设置时，有如下规律：</p>
+<p>在Linux上运行<code>sysctl -a | grep tcp_rmem</code>查看接收缓冲区大小。三个值分别为最小值，默认值，最大值。</p>
+<p>更多关于缓冲区的内容可见<a href="https://blog.csdn.net/weixin_44774358/article/details/89881605">记一次典型的TCP传输吞吐效率问题</a>。</p>
+<p>根据他提供的系统<code>tcp_rmem</code>有<code>net.ipv4.tcp_rmem = 536870912 536870912 536870912</code>。由此可见，这将会给每个连接配极大的缓冲区，导致上述情况发生。</p>
+<p>他在aria2设置了较小的<code>socket-recv-buffer-size</code>后，情况有了一定的好转。</p>
+<p>根据<a href="https://github.com/aria2/aria2/issues/487">issue2</a>，aria2的<code>socket-recv-buffer-size</code>是用来解决当udp流过大时缓冲区溢出导致的数据丢弃的问题。当时的可能由于系统默认缓冲区过小，才会导致丢弃。在issue2中通过设置一个足够大的系统缓冲区<code>net.core.rmem_default = 2097152 </code>，从而避免溢出。</p>
+<h3 id="解决方案">解决方案</h3>
+<ol>
+<li>调整系统接收区缓冲大小，调整<code>tcp_rmem</code>三个值的大小，使得系统能进行动态分配。</li>
+<li>设置aria2的<code>socket-recv-buffer-size</code>避免超速。</li>
+</ol>
+<p>关于方案1。linux可在<code>/etc/sysctl.conf</code>中添加<code>net.ipv4.tcp_rmem = &lt;MIN&gt; &lt;DEFAULT&gt; &lt;MAX&gt;</code>，然后<code>sysctl -p</code>刷新。windows上的设置及更多详情见<a href="https://zhuanlan.zhihu.com/p/80043707">TCP传输慢问题分析</a>。</p>
+<p>关于方案2。要实现动态设置有难度。可以将简单的将其设置为一个较为小的值如<code>1m</code>。</p>
+<h3 id="源码解析">源码解析</h3>
+<h4 id="更改socket-recv-buffer-size默认值">更改<code>socket-recv-buffer-size</code>默认值</h4>
+<p>更改<code>socket-recv-buffer-size</code>默认值的方法很简单。在<code>src/OptionHandlerFactory.cc</code>有，此处设置为<code>2M</code>。</p>
+<div class="highlight"><div style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">
+<table style="border-spacing:0;padding:0;margin:0;border:0;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
+<pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 1
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 2
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 3
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 4
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 5
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 6
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 7
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 8
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 9
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">10
+</span></code></pre></td>
+<td style="vertical-align:top;padding:0;margin:0;border:0;;width:100%">
+<pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-c++" data-lang="c++"><span style="display:flex;"><span>...
+</span></span><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>  OptionHandler<span style="color:#000;font-weight:bold">*</span> <span style="color:#900;font-weight:bold">op</span>(
+</span></span><span style="display:flex;"><span>    <span style="color:#000;font-weight:bold">new</span> UnitNumberOptionHandler(PREF_SOCKET_RECV_BUFFER_SIZE,
+</span></span><span style="display:flex;"><span>                                TEXT_SOCKET_RECV_BUFFER_SIZE,
+</span></span><span style="display:flex;"><span>                                <span style="color:#d14">&#34;2m&#34;</span>, <span style="color:#099">0</span>, <span style="color:#099">16</span>_m));
+</span></span><span style="display:flex;"><span>  op<span style="color:#000;font-weight:bold">-&gt;</span>addTag(TAG_ADVANCED);
+</span></span><span style="display:flex;"><span>  handlers.push_back(op);
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span>...
+</span></span></code></pre></td></tr></table>
+</div>
+</div><h4 id="socket-recv-buffer-size的设置时机"><code>socket-recv-buffer-size</code>的设置时机</h4>
+<p>此处记录一下对<code>socket-recv-buffer-size</code>的设置时机，以便以后升级方案。有以下多种情况：</p>
+<p>一是程序启动时，<code>socket-recv-buffer-size</code>进行初始化，初始化代码位于<code>SocketCore.cc</code>中：</p>
+<div class="highlight"><div style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">
+<table style="border-spacing:0;padding:0;margin:0;border:0;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
+<pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">1
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">2
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">3
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">4
+</span></code></pre></td>
+<td style="vertical-align:top;padding:0;margin:0;border:0;;width:100%">
+<pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-c++" data-lang="c++"><span style="display:flex;"><span><span style="color:#458;font-weight:bold">void</span> SocketCore<span style="color:#000;font-weight:bold">::</span>setSocketRecvBufferSize(<span style="color:#458;font-weight:bold">int</span> size)
+</span></span><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>  socketRecvBufferSize_ <span style="color:#000;font-weight:bold">=</span> size;
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>这段代码在<code>Context.cc</code>中被调用：</p>
+<div class="highlight"><div style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">
+<table style="border-spacing:0;padding:0;margin:0;border:0;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
+<pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">1
+</span></code></pre></td>
+<td style="vertical-align:top;padding:0;margin:0;border:0;;width:100%">
+<pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-c++" data-lang="c++"><span style="display:flex;"><span>SocketCore<span style="color:#000;font-weight:bold">::</span>setSocketRecvBufferSize(op<span style="color:#000;font-weight:bold">-&gt;</span>getAsInt(PREF_SOCKET_RECV_BUFFER_SIZE));
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>二是用户通过RPC进行全局参数设置时。在<code>RpcMethodImpl.cc</code>中，<code>e-&gt;getOption()</code>的返回可以设置。</p>
+<div class="highlight"><div style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">
+<table style="border-spacing:0;padding:0;margin:0;border:0;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
+<pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 1
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 2
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 3
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 4
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 5
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 6
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 7
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 8
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 9
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">10
+</span></code></pre></td>
+<td style="vertical-align:top;padding:0;margin:0;border:0;;width:100%">
+<pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-c++" data-lang="c++"><span style="display:flex;"><span>std<span style="color:#000;font-weight:bold">::</span>unique_ptr<span style="color:#000;font-weight:bold">&lt;</span>ValueBase<span style="color:#000;font-weight:bold">&gt;</span>
+</span></span><span style="display:flex;"><span>ChangeGlobalOptionRpcMethod<span style="color:#000;font-weight:bold">::</span>process(<span style="color:#000;font-weight:bold">const</span> RpcRequest<span style="color:#000;font-weight:bold">&amp;</span> req, DownloadEngine<span style="color:#000;font-weight:bold">*</span> e)
+</span></span><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>  <span style="color:#000;font-weight:bold">const</span> Dict<span style="color:#000;font-weight:bold">*</span> optsParam <span style="color:#000;font-weight:bold">=</span> checkRequiredParam<span style="color:#000;font-weight:bold">&lt;</span>Dict<span style="color:#000;font-weight:bold">&gt;</span>(req, <span style="color:#099">0</span>);
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>  Option option;
+</span></span><span style="display:flex;"><span>  gatherChangeableGlobalOption(<span style="color:#000;font-weight:bold">&amp;</span>option, optsParam);
+</span></span><span style="display:flex;"><span>  changeGlobalOption(option, e);
+</span></span><span style="display:flex;"><span>  <span style="color:#000;font-weight:bold">return</span> <span style="color:#900;font-weight:bold">createOKResponse</span>();
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>三是用户通过RPC进行单一任务的设置时。在<code>RpcMethodImpl.cc</code>中，<code>group-&gt;getOption()</code>的返回可以设置。</p>
+<div class="highlight"><div style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">
+<table style="border-spacing:0;padding:0;margin:0;border:0;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
+<pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 1
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 2
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 3
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 4
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 5
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 6
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 7
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 8
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 9
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">10
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">11
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">12
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">13
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">14
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">15
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">16
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">17
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">18
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">19
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">20
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">21
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">22
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">23
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">24
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">25
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">26
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">27
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">28
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">29
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">30
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">31
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">32
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">33
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">34
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">35
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">36
+</span></code></pre></td>
+<td style="vertical-align:top;padding:0;margin:0;border:0;;width:100%">
+<pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-c++" data-lang="c++"><span style="display:flex;"><span>std<span style="color:#000;font-weight:bold">::</span>unique_ptr<span style="color:#000;font-weight:bold">&lt;</span>ValueBase<span style="color:#000;font-weight:bold">&gt;</span> ChangeOptionRpcMethod<span style="color:#000;font-weight:bold">::</span>process(<span style="color:#000;font-weight:bold">const</span> RpcRequest<span style="color:#000;font-weight:bold">&amp;</span> req,
+</span></span><span style="display:flex;"><span>                                                          DownloadEngine<span style="color:#000;font-weight:bold">*</span> e)
+</span></span><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>  <span style="color:#000;font-weight:bold">const</span> String<span style="color:#000;font-weight:bold">*</span> gidParam <span style="color:#000;font-weight:bold">=</span> checkRequiredParam<span style="color:#000;font-weight:bold">&lt;</span>String<span style="color:#000;font-weight:bold">&gt;</span>(req, <span style="color:#099">0</span>);
+</span></span><span style="display:flex;"><span>  <span style="color:#000;font-weight:bold">const</span> Dict<span style="color:#000;font-weight:bold">*</span> optsParam <span style="color:#000;font-weight:bold">=</span> checkRequiredParam<span style="color:#000;font-weight:bold">&lt;</span>Dict<span style="color:#000;font-weight:bold">&gt;</span>(req, <span style="color:#099">1</span>);
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>  a2_gid_t gid <span style="color:#000;font-weight:bold">=</span> str2Gid(gidParam);
+</span></span><span style="display:flex;"><span>  <span style="color:#000;font-weight:bold">auto</span> group <span style="color:#000;font-weight:bold">=</span> e<span style="color:#000;font-weight:bold">-&gt;</span>getRequestGroupMan()<span style="color:#000;font-weight:bold">-&gt;</span>findGroup(gid);
+</span></span><span style="display:flex;"><span>  <span style="color:#000;font-weight:bold">if</span> (group) {
+</span></span><span style="display:flex;"><span>    Option option;
+</span></span><span style="display:flex;"><span>    std<span style="color:#000;font-weight:bold">::</span>shared_ptr<span style="color:#000;font-weight:bold">&lt;</span>Option<span style="color:#000;font-weight:bold">&gt;</span> pendingOption;
+</span></span><span style="display:flex;"><span>    <span style="color:#000;font-weight:bold">if</span> (group<span style="color:#000;font-weight:bold">-&gt;</span>getState() <span style="color:#000;font-weight:bold">==</span> RequestGroup<span style="color:#000;font-weight:bold">::</span>STATE_ACTIVE) {
+</span></span><span style="display:flex;"><span>      pendingOption <span style="color:#000;font-weight:bold">=</span> std<span style="color:#000;font-weight:bold">::</span>make_shared<span style="color:#000;font-weight:bold">&lt;</span>Option<span style="color:#000;font-weight:bold">&gt;</span>();
+</span></span><span style="display:flex;"><span>      gatherChangeableOption(<span style="color:#000;font-weight:bold">&amp;</span>option, pendingOption.get(), optsParam);
+</span></span><span style="display:flex;"><span>      <span style="color:#000;font-weight:bold">if</span> (<span style="color:#000;font-weight:bold">!</span>pendingOption<span style="color:#000;font-weight:bold">-&gt;</span>emptyLocal()) {
+</span></span><span style="display:flex;"><span>        group<span style="color:#000;font-weight:bold">-&gt;</span>setPendingOption(pendingOption);
+</span></span><span style="display:flex;"><span>        <span style="color:#998;font-style:italic">// pauseRequestGroup() may fail if group has been told to
+</span></span></span><span style="display:flex;"><span><span style="color:#998;font-style:italic"></span>        <span style="color:#998;font-style:italic">// stop/pause already.  In that case, we can still apply the
+</span></span></span><span style="display:flex;"><span><span style="color:#998;font-style:italic"></span>        <span style="color:#998;font-style:italic">// pending options on pause.
+</span></span></span><span style="display:flex;"><span><span style="color:#998;font-style:italic"></span>        <span style="color:#000;font-weight:bold">if</span> (pauseRequestGroup(group, <span style="color:#0086b3">false</span>, <span style="color:#0086b3">false</span>)) {
+</span></span><span style="display:flex;"><span>          group<span style="color:#000;font-weight:bold">-&gt;</span>setRestartRequested(<span style="color:#0086b3">true</span>);
+</span></span><span style="display:flex;"><span>          e<span style="color:#000;font-weight:bold">-&gt;</span>setRefreshInterval(std<span style="color:#000;font-weight:bold">::</span>chrono<span style="color:#000;font-weight:bold">::</span>milliseconds(<span style="color:#099">0</span>));
+</span></span><span style="display:flex;"><span>        }
+</span></span><span style="display:flex;"><span>      }
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>    <span style="color:#000;font-weight:bold">else</span> {
+</span></span><span style="display:flex;"><span>      gatherChangeableOptionForReserved(<span style="color:#000;font-weight:bold">&amp;</span>option, optsParam);
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>    changeOption(group, option, e);
+</span></span><span style="display:flex;"><span>  }
+</span></span><span style="display:flex;"><span>  <span style="color:#000;font-weight:bold">else</span> {
+</span></span><span style="display:flex;"><span>    <span style="color:#000;font-weight:bold">throw</span> <span style="color:#900;font-weight:bold">DL_ABORT_EX</span>(
+</span></span><span style="display:flex;"><span>        fmt(<span style="color:#d14">&#34;Cannot change option for GID#%s&#34;</span>, GroupId<span style="color:#000;font-weight:bold">::</span>toHex(gid).c_str()));
+</span></span><span style="display:flex;"><span>  }
+</span></span><span style="display:flex;"><span>  <span style="color:#000;font-weight:bold">return</span> <span style="color:#900;font-weight:bold">createOKResponse</span>();
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>其中<code>changeOption</code>的修改方法是先从<code>group</code>取副本，将<code>option</code>中的设置项合并到副本，若<code>option</code>中有更改的项，则从副本中取出值设置到<code>group</code>或其他类中。</p>
+<div class="highlight"><div style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">
+<table style="border-spacing:0;padding:0;margin:0;border:0;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
+<pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 1
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 2
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 3
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 4
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 5
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 6
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 7
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 8
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 9
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">10
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">11
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">12
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">13
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">14
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">15
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">16
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">17
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">18
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">19
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">20
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">21
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">22
+</span></code></pre></td>
+<td style="vertical-align:top;padding:0;margin:0;border:0;;width:100%">
+<pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-c++" data-lang="c++"><span style="display:flex;"><span><span style="color:#458;font-weight:bold">void</span> <span style="color:#900;font-weight:bold">changeOption</span>(<span style="color:#000;font-weight:bold">const</span> std<span style="color:#000;font-weight:bold">::</span>shared_ptr<span style="color:#000;font-weight:bold">&lt;</span>RequestGroup<span style="color:#000;font-weight:bold">&gt;&amp;</span> group,
+</span></span><span style="display:flex;"><span>                  <span style="color:#000;font-weight:bold">const</span> Option<span style="color:#000;font-weight:bold">&amp;</span> option, DownloadEngine<span style="color:#000;font-weight:bold">*</span> e)
+</span></span><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>  <span style="color:#000;font-weight:bold">const</span> std<span style="color:#000;font-weight:bold">::</span>shared_ptr<span style="color:#000;font-weight:bold">&lt;</span>DownloadContext<span style="color:#000;font-weight:bold">&gt;&amp;</span> dctx <span style="color:#000;font-weight:bold">=</span> group<span style="color:#000;font-weight:bold">-&gt;</span>getDownloadContext();
+</span></span><span style="display:flex;"><span>  <span style="color:#000;font-weight:bold">const</span> std<span style="color:#000;font-weight:bold">::</span>shared_ptr<span style="color:#000;font-weight:bold">&lt;</span>Option<span style="color:#000;font-weight:bold">&gt;&amp;</span> grOption <span style="color:#000;font-weight:bold">=</span> group<span style="color:#000;font-weight:bold">-&gt;</span>getOption();
+</span></span><span style="display:flex;"><span>  grOption<span style="color:#000;font-weight:bold">-&gt;</span>merge(option);
+</span></span><span style="display:flex;"><span>...
+</span></span><span style="display:flex;"><span>  <span style="color:#000;font-weight:bold">if</span> (option.defined(PREF_MAX_DOWNLOAD_LIMIT)) {
+</span></span><span style="display:flex;"><span>    group<span style="color:#000;font-weight:bold">-&gt;</span>setMaxDownloadSpeedLimit(
+</span></span><span style="display:flex;"><span>        grOption<span style="color:#000;font-weight:bold">-&gt;</span>getAsInt(PREF_MAX_DOWNLOAD_LIMIT));
+</span></span><span style="display:flex;"><span>  }
+</span></span><span style="display:flex;"><span>  <span style="color:#000;font-weight:bold">if</span> (option.defined(PREF_MAX_UPLOAD_LIMIT)) {
+</span></span><span style="display:flex;"><span>    group<span style="color:#000;font-weight:bold">-&gt;</span>setMaxUploadSpeedLimit(grOption<span style="color:#000;font-weight:bold">-&gt;</span>getAsInt(PREF_MAX_UPLOAD_LIMIT));
+</span></span><span style="display:flex;"><span>  }
+</span></span><span style="display:flex;"><span><span style="color:#999;font-weight:bold;font-style:italic">#ifdef ENABLE_BITTORRENT
+</span></span></span><span style="display:flex;"><span><span style="color:#999;font-weight:bold;font-style:italic"></span>  <span style="color:#000;font-weight:bold">auto</span> btObject <span style="color:#000;font-weight:bold">=</span> e<span style="color:#000;font-weight:bold">-&gt;</span>getBtRegistry()<span style="color:#000;font-weight:bold">-&gt;</span>get(group<span style="color:#000;font-weight:bold">-&gt;</span>getGID());
+</span></span><span style="display:flex;"><span>  <span style="color:#000;font-weight:bold">if</span> (btObject) {
+</span></span><span style="display:flex;"><span>    <span style="color:#000;font-weight:bold">if</span> (option.defined(PREF_BT_MAX_PEERS)) {
+</span></span><span style="display:flex;"><span>      btObject<span style="color:#000;font-weight:bold">-&gt;</span>btRuntime<span style="color:#000;font-weight:bold">-&gt;</span>setMaxPeers(grOption<span style="color:#000;font-weight:bold">-&gt;</span>getAsInt(PREF_BT_MAX_PEERS));
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>  }
+</span></span><span style="display:flex;"><span>...
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>四是在添加url链接时。在<code>RpcMethodImpl.cc</code>中的<code>requestOption</code>下可以设置。</p>
+<div class="highlight"><div style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">
+<table style="border-spacing:0;padding:0;margin:0;border:0;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
+<pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 1
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 2
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 3
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 4
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 5
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 6
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 7
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 8
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 9
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">10
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">11
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">12
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">13
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">14
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">15
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">16
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">17
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">18
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">19
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">20
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">21
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">22
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">23
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">24
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">25
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">26
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">27
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">28
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">29
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">30
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">31
+</span></code></pre></td>
+<td style="vertical-align:top;padding:0;margin:0;border:0;;width:100%">
+<pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-c++" data-lang="c++"><span style="display:flex;"><span>std<span style="color:#000;font-weight:bold">::</span>unique_ptr<span style="color:#000;font-weight:bold">&lt;</span>ValueBase<span style="color:#000;font-weight:bold">&gt;</span> AddUriRpcMethod<span style="color:#000;font-weight:bold">::</span>process(<span style="color:#000;font-weight:bold">const</span> RpcRequest<span style="color:#000;font-weight:bold">&amp;</span> req,
+</span></span><span style="display:flex;"><span>                                                    DownloadEngine<span style="color:#000;font-weight:bold">*</span> e)
+</span></span><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>  <span style="color:#000;font-weight:bold">const</span> List<span style="color:#000;font-weight:bold">*</span> urisParam <span style="color:#000;font-weight:bold">=</span> checkRequiredParam<span style="color:#000;font-weight:bold">&lt;</span>List<span style="color:#000;font-weight:bold">&gt;</span>(req, <span style="color:#099">0</span>);
+</span></span><span style="display:flex;"><span>  <span style="color:#000;font-weight:bold">const</span> Dict<span style="color:#000;font-weight:bold">*</span> optsParam <span style="color:#000;font-weight:bold">=</span> checkParam<span style="color:#000;font-weight:bold">&lt;</span>Dict<span style="color:#000;font-weight:bold">&gt;</span>(req, <span style="color:#099">1</span>);
+</span></span><span style="display:flex;"><span>  <span style="color:#000;font-weight:bold">const</span> Integer<span style="color:#000;font-weight:bold">*</span> posParam <span style="color:#000;font-weight:bold">=</span> checkParam<span style="color:#000;font-weight:bold">&lt;</span>Integer<span style="color:#000;font-weight:bold">&gt;</span>(req, <span style="color:#099">2</span>);
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>  std<span style="color:#000;font-weight:bold">::</span>vector<span style="color:#000;font-weight:bold">&lt;</span>std<span style="color:#000;font-weight:bold">::</span>string<span style="color:#000;font-weight:bold">&gt;</span> uris;
+</span></span><span style="display:flex;"><span>  extractUris(std<span style="color:#000;font-weight:bold">::</span>back_inserter(uris), urisParam);
+</span></span><span style="display:flex;"><span>  <span style="color:#000;font-weight:bold">if</span> (uris.empty()) {
+</span></span><span style="display:flex;"><span>    <span style="color:#000;font-weight:bold">throw</span> <span style="color:#900;font-weight:bold">DL_ABORT_EX</span>(<span style="color:#d14">&#34;URI is not provided.&#34;</span>);
+</span></span><span style="display:flex;"><span>  }
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>  <span style="color:#000;font-weight:bold">auto</span> requestOption <span style="color:#000;font-weight:bold">=</span> std<span style="color:#000;font-weight:bold">::</span>make_shared<span style="color:#000;font-weight:bold">&lt;</span>Option<span style="color:#000;font-weight:bold">&gt;</span>(<span style="color:#000;font-weight:bold">*</span>e<span style="color:#000;font-weight:bold">-&gt;</span>getOption());
+</span></span><span style="display:flex;"><span>  gatherRequestOption(requestOption.get(), optsParam);
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>  <span style="color:#458;font-weight:bold">bool</span> posGiven <span style="color:#000;font-weight:bold">=</span> checkPosParam(posParam);
+</span></span><span style="display:flex;"><span>  size_t pos <span style="color:#000;font-weight:bold">=</span> posGiven <span style="color:#000;font-weight:bold">?</span> posParam<span style="color:#000;font-weight:bold">-&gt;</span>i() <span style="color:#000;font-weight:bold">:</span> <span style="color:#099">0</span>;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>  std<span style="color:#000;font-weight:bold">::</span>vector<span style="color:#000;font-weight:bold">&lt;</span>std<span style="color:#000;font-weight:bold">::</span>shared_ptr<span style="color:#000;font-weight:bold">&lt;</span>RequestGroup<span style="color:#000;font-weight:bold">&gt;&gt;</span> result;
+</span></span><span style="display:flex;"><span>  createRequestGroupForUri(result, requestOption, uris,
+</span></span><span style="display:flex;"><span>                           <span style="color:#998;font-style:italic">/* ignoreForceSeq = */</span> <span style="color:#0086b3">true</span>,
+</span></span><span style="display:flex;"><span>                           <span style="color:#998;font-style:italic">/* ignoreLocalPath = */</span> <span style="color:#0086b3">true</span>);
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>  <span style="color:#000;font-weight:bold">if</span> (<span style="color:#000;font-weight:bold">!</span>result.empty()) {
+</span></span><span style="display:flex;"><span>    <span style="color:#000;font-weight:bold">return</span> <span style="color:#900;font-weight:bold">addRequestGroup</span>(result.front(), e, posGiven, pos);
+</span></span><span style="display:flex;"><span>  }
+</span></span><span style="display:flex;"><span>  <span style="color:#000;font-weight:bold">else</span> {
+</span></span><span style="display:flex;"><span>    <span style="color:#000;font-weight:bold">throw</span> <span style="color:#900;font-weight:bold">DL_ABORT_EX</span>(<span style="color:#d14">&#34;No URI to download.&#34;</span>);
+</span></span><span style="display:flex;"><span>  }
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>五是添加BT种子时。在<code>RpcMethodImpl.cc</code>中的<code>requestOption</code>下可以设置。</p>
+<div class="highlight"><div style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">
+<table style="border-spacing:0;padding:0;margin:0;border:0;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
+<pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 1
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 2
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 3
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 4
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 5
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 6
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 7
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 8
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 9
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">10
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">11
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">12
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">13
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">14
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">15
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">16
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">17
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">18
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">19
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">20
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">21
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">22
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">23
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">24
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">25
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">26
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">27
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">28
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">29
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">30
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">31
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">32
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">33
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">34
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">35
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">36
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">37
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">38
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">39
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">40
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">41
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">42
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">43
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">44
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">45
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">46
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">47
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">48
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">49
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">50
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">51
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">52
+</span></code></pre></td>
+<td style="vertical-align:top;padding:0;margin:0;border:0;;width:100%">
+<pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-c++" data-lang="c++"><span style="display:flex;"><span>std<span style="color:#000;font-weight:bold">::</span>unique_ptr<span style="color:#000;font-weight:bold">&lt;</span>ValueBase<span style="color:#000;font-weight:bold">&gt;</span> AddTorrentRpcMethod<span style="color:#000;font-weight:bold">::</span>process(<span style="color:#000;font-weight:bold">const</span> RpcRequest<span style="color:#000;font-weight:bold">&amp;</span> req,
+</span></span><span style="display:flex;"><span>                                                        DownloadEngine<span style="color:#000;font-weight:bold">*</span> e)
+</span></span><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>  <span style="color:#000;font-weight:bold">const</span> String<span style="color:#000;font-weight:bold">*</span> torrentParam <span style="color:#000;font-weight:bold">=</span> checkRequiredParam<span style="color:#000;font-weight:bold">&lt;</span>String<span style="color:#000;font-weight:bold">&gt;</span>(req, <span style="color:#099">0</span>);
+</span></span><span style="display:flex;"><span>  <span style="color:#000;font-weight:bold">const</span> List<span style="color:#000;font-weight:bold">*</span> urisParam <span style="color:#000;font-weight:bold">=</span> checkParam<span style="color:#000;font-weight:bold">&lt;</span>List<span style="color:#000;font-weight:bold">&gt;</span>(req, <span style="color:#099">1</span>);
+</span></span><span style="display:flex;"><span>  <span style="color:#000;font-weight:bold">const</span> Dict<span style="color:#000;font-weight:bold">*</span> optsParam <span style="color:#000;font-weight:bold">=</span> checkParam<span style="color:#000;font-weight:bold">&lt;</span>Dict<span style="color:#000;font-weight:bold">&gt;</span>(req, <span style="color:#099">2</span>);
+</span></span><span style="display:flex;"><span>  <span style="color:#000;font-weight:bold">const</span> Integer<span style="color:#000;font-weight:bold">*</span> posParam <span style="color:#000;font-weight:bold">=</span> checkParam<span style="color:#000;font-weight:bold">&lt;</span>Integer<span style="color:#000;font-weight:bold">&gt;</span>(req, <span style="color:#099">3</span>);
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>  std<span style="color:#000;font-weight:bold">::</span>unique_ptr<span style="color:#000;font-weight:bold">&lt;</span>String<span style="color:#000;font-weight:bold">&gt;</span> tempTorrentParam;
+</span></span><span style="display:flex;"><span>  <span style="color:#000;font-weight:bold">if</span> (req.jsonRpc) {
+</span></span><span style="display:flex;"><span>    tempTorrentParam <span style="color:#000;font-weight:bold">=</span> String<span style="color:#000;font-weight:bold">::</span>g(
+</span></span><span style="display:flex;"><span>        base64<span style="color:#000;font-weight:bold">::</span>decode(torrentParam<span style="color:#000;font-weight:bold">-&gt;</span>s().begin(), torrentParam<span style="color:#000;font-weight:bold">-&gt;</span>s().end()));
+</span></span><span style="display:flex;"><span>    torrentParam <span style="color:#000;font-weight:bold">=</span> tempTorrentParam.get();
+</span></span><span style="display:flex;"><span>  }
+</span></span><span style="display:flex;"><span>  std<span style="color:#000;font-weight:bold">::</span>vector<span style="color:#000;font-weight:bold">&lt;</span>std<span style="color:#000;font-weight:bold">::</span>string<span style="color:#000;font-weight:bold">&gt;</span> uris;
+</span></span><span style="display:flex;"><span>  extractUris(std<span style="color:#000;font-weight:bold">::</span>back_inserter(uris), urisParam);
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>  <span style="color:#000;font-weight:bold">auto</span> requestOption <span style="color:#000;font-weight:bold">=</span> std<span style="color:#000;font-weight:bold">::</span>make_shared<span style="color:#000;font-weight:bold">&lt;</span>Option<span style="color:#000;font-weight:bold">&gt;</span>(<span style="color:#000;font-weight:bold">*</span>e<span style="color:#000;font-weight:bold">-&gt;</span>getOption());
+</span></span><span style="display:flex;"><span>  gatherRequestOption(requestOption.get(), optsParam);
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>  <span style="color:#458;font-weight:bold">bool</span> posGiven <span style="color:#000;font-weight:bold">=</span> checkPosParam(posParam);
+</span></span><span style="display:flex;"><span>  size_t pos <span style="color:#000;font-weight:bold">=</span> posGiven <span style="color:#000;font-weight:bold">?</span> posParam<span style="color:#000;font-weight:bold">-&gt;</span>i() <span style="color:#000;font-weight:bold">:</span> <span style="color:#099">0</span>;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>  std<span style="color:#000;font-weight:bold">::</span>string filename;
+</span></span><span style="display:flex;"><span>  <span style="color:#000;font-weight:bold">if</span> (requestOption<span style="color:#000;font-weight:bold">-&gt;</span>getAsBool(PREF_RPC_SAVE_UPLOAD_METADATA)) {
+</span></span><span style="display:flex;"><span>    filename <span style="color:#000;font-weight:bold">=</span> util<span style="color:#000;font-weight:bold">::</span>applyDir(requestOption<span style="color:#000;font-weight:bold">-&gt;</span>get(PREF_DIR),
+</span></span><span style="display:flex;"><span>                              getHexSha1(torrentParam<span style="color:#000;font-weight:bold">-&gt;</span>s()) <span style="color:#000;font-weight:bold">+</span> <span style="color:#d14">&#34;.torrent&#34;</span>);
+</span></span><span style="display:flex;"><span>    <span style="color:#998;font-style:italic">// Save uploaded data in order to save this download in
+</span></span></span><span style="display:flex;"><span><span style="color:#998;font-style:italic"></span>    <span style="color:#998;font-style:italic">// --save-session file.
+</span></span></span><span style="display:flex;"><span><span style="color:#998;font-style:italic"></span>    <span style="color:#000;font-weight:bold">if</span> (util<span style="color:#000;font-weight:bold">::</span>saveAs(filename, torrentParam<span style="color:#000;font-weight:bold">-&gt;</span>s(), <span style="color:#0086b3">true</span>)) {
+</span></span><span style="display:flex;"><span>      A2_LOG_INFO(
+</span></span><span style="display:flex;"><span>          fmt(<span style="color:#d14">&#34;Uploaded torrent data was saved as %s&#34;</span>, filename.c_str()));
+</span></span><span style="display:flex;"><span>      requestOption<span style="color:#000;font-weight:bold">-&gt;</span>put(PREF_TORRENT_FILE, filename);
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>    <span style="color:#000;font-weight:bold">else</span> {
+</span></span><span style="display:flex;"><span>      A2_LOG_INFO(fmt(<span style="color:#d14">&#34;Uploaded torrent data was not saved.&#34;</span>
+</span></span><span style="display:flex;"><span>                      <span style="color:#d14">&#34; Failed to write file %s&#34;</span>,
+</span></span><span style="display:flex;"><span>                      filename.c_str()));
+</span></span><span style="display:flex;"><span>      filename.clear();
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>  }
+</span></span><span style="display:flex;"><span>  std<span style="color:#000;font-weight:bold">::</span>vector<span style="color:#000;font-weight:bold">&lt;</span>std<span style="color:#000;font-weight:bold">::</span>shared_ptr<span style="color:#000;font-weight:bold">&lt;</span>RequestGroup<span style="color:#000;font-weight:bold">&gt;&gt;</span> result;
+</span></span><span style="display:flex;"><span>  createRequestGroupForBitTorrent(result, requestOption, uris, filename,
+</span></span><span style="display:flex;"><span>                                  torrentParam<span style="color:#000;font-weight:bold">-&gt;</span>s());
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>  <span style="color:#000;font-weight:bold">if</span> (<span style="color:#000;font-weight:bold">!</span>result.empty()) {
+</span></span><span style="display:flex;"><span>    <span style="color:#000;font-weight:bold">return</span> <span style="color:#900;font-weight:bold">addRequestGroup</span>(result.front(), e, posGiven, pos);
+</span></span><span style="display:flex;"><span>  }
+</span></span><span style="display:flex;"><span>  <span style="color:#000;font-weight:bold">else</span> {
+</span></span><span style="display:flex;"><span>    <span style="color:#000;font-weight:bold">throw</span> <span style="color:#900;font-weight:bold">DL_ABORT_EX</span>(<span style="color:#d14">&#34;No Torrent to download.&#34;</span>);
+</span></span><span style="display:flex;"><span>  }
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>还有其他更多方法可以添加下载，或在未来补充。</p>
+
+        </div>
+
+        
+<div class="post-archive">
+    <ul class="post-copyright">
+        <li><strong>原文作者：</strong><a rel="author" href="/">qydysky</a></li>
+        <li style="word-break:break-all"><strong>原文链接：</strong><a href="/post/20210406aria2/">/post/20210406aria2/</a></li>
+        <li><strong>版权声明：</strong>本作品采用<a rel="license" href="https://creativecommons.org/licenses/by-nc-nd/4.0/">知识共享署名-非商业性使用-禁止演绎 4.0 国际许可协议</a>进行许可，非商业转载请注明出处（作者，原文链接），商业转载请联系作者获得授权。</li>
+    </ul>
+</div>
+<br/>
+
+
+
+        
+
+<div class="post-archive">
+    <h2 class="related-title">更多</h2>
+    <ul class="listing">
+        
+        <li><a href="/post/20210402debain/">Debian音量控制</a></li>
+        
+        <li><a href="/post/20210331caddy/">Caddy的配置与运行</a></li>
+        
+        <li><a href="/post/20210331hexo/">hexo安装、配置及博客生成全流程</a></li>
+        
+        <li><a href="/about/">关于</a></li>
+        
+        <li><a href="/tags/">标签</a></li>
+        
+    </ul>
+</div>
+
+
+    </article>
+    
+    
+
+    
+    
+</div>
+
+                    <footer id="footer">
+    <div>
+        &copy; 2024 <a href="/">qydysky&#39;s blog By qydysky</a>
+        
+    </div>
+    <br />
+    <div>
+        <a href="https://icp.gov.moe/?keyword=20240909" target="_blank">萌ICP备20240909号</a>
+    </div>
+    <br />
+    <div>
+        <div class="github-badge">
+            <a href="https://gohugo.io/" target="_black" rel="nofollow"><span class="badge-subject">Powered by</span><span class="badge-value bg-blue">Hugo</span></a>
+        </div>
+        <div class="github-badge">
+            <a href="https://github.com/flysnow-org/maupassant-hugo" target="_black"><span class="badge-subject">Theme</span><span class="badge-value bg-yellowgreen">Maupassant</span></a>
+        </div>
+    </div>
+</footer>
+
+
+    
+    <script type="text/javascript">
+        window.MathJax = {
+            tex2jax: {
+                inlineMath: [['$', '$']],
+                processEscapes: true
+                }
+            };
+    </script>
+    <script src='/js/mathjax/2.7.5/MathJax.js?config=TeX-MML-AM_CHTML' async></script>
+
+<a id="rocket" href="#top"></a>
+<script type="text/javascript" src='/js/totop.js?v=0.0.0' async=""></script>
+
+
+
+
+
+
+                </div>
+
+                <div id="secondary">
+    <section class="widget">
+        <form id="search" action='/search/' method="get" accept-charset="utf-8" target="_blank" _lpchecked="1">
+      
+      <input type="text" name="q" maxlength="20" placeholder="Search">
+      <input type="hidden" name="sitesearch" value="/">
+      <button type="submit" class="submit icon-search"></button>
+</form>
+    </section>
+    
+    
+
+    <section class="widget">
+        <h3 class="widget-title"><a href='/tags/'>标签</a></h3>
+<div class="tagcloud">
+    
+    <a href="/tags/Caddy/">Caddy</a>
+    
+    <a href="/tags/amixer/">amixer</a>
+    
+    <a href="/tags/ap/">ap</a>
+    
+    <a href="/tags/aria2/">aria2</a>
+    
+    <a href="/tags/c/">c</a>
+    
+    <a href="/tags/canvas/">canvas</a>
+    
+    <a href="/tags/certbot/">certbot</a>
+    
+    <a href="/tags/crontab/">crontab</a>
+    
+    <a href="/tags/docker/">docker</a>
+    
+    <a href="/tags/ffmpeg/">ffmpeg</a>
+    
+    <a href="/tags/flv/">flv</a>
+    
+    <a href="/tags/fmp4/">fmp4</a>
+    
+    <a href="/tags/frp/">frp</a>
+    
+    <a href="/tags/gateway/">gateway</a>
+    
+    <a href="/tags/golang/">golang</a>
+    
+    <a href="/tags/hexo/">hexo</a>
+    
+    <a href="/tags/javascript/">javascript</a>
+    
+    <a href="/tags/kde/">kde</a>
+    
+    <a href="/tags/kioexec/">kioexec</a>
+    
+    <a href="/tags/l4d2/">l4d2</a>
+    
+    <a href="/tags/legado/">legado</a>
+    
+    <a href="/tags/letsencrypt/">letsencrypt</a>
+    
+    <a href="/tags/linux/">linux</a>
+    
+    <a href="/tags/mock/">mock</a>
+    
+    <a href="/tags/mp4/">mp4</a>
+    
+    <a href="/tags/mysql/">mysql</a>
+    
+    <a href="/tags/ncurses/">ncurses</a>
+    
+    <a href="/tags/nodejs/">nodejs</a>
+    
+    <a href="/tags/nvm/">nvm</a>
+    
+    <a href="/tags/oracle/">oracle</a>
+    
+    <a href="/tags/plugin/">plugin</a>
+    
+    <a href="/tags/pocketbase/">pocketbase</a>
+    
+    <a href="/tags/regExp/">regExp</a>
+    
+    <a href="/tags/sh/">sh</a>
+    
+    <a href="/tags/shell/">shell</a>
+    
+    <a href="/tags/snap/">snap</a>
+    
+    <a href="/tags/sourcemod/">sourcemod</a>
+    
+    <a href="/tags/spring/">spring</a>
+    
+    <a href="/tags/truenas/">truenas</a>
+    
+    <a href="/tags/url/">url</a>
+    
+    <a href="/tags/vs/">vs</a>
+    
+    <a href="/tags/vue-element-admin/">vue-element-admin</a>
+    
+    <a href="/tags/wifi7/">wifi7</a>
+    
+    <a href="/tags/xiaomi/">xiaomi</a>
+    
+    <a href="/tags/%E6%97%A5%E5%B8%B8/">日常</a>
+    
+</div>
+    </section>
+
+    
+<section class="widget">
+    <h3 class="widget-title">友情链接</h3>
+    <ul class="widget-list">
+        
+        <li>
+            <a target="_blank" href="https://vcb-s.com/" title="VCB-Studio">VCB-Studio</a>
+        </li>
+        
+    </ul>
+</section>
+
+
+    <section class="widget">
+        <h3 class="widget-title">其它</h3>
+        <ul class="widget-list">
+            <li><a href="/index.xml">文章 RSS</a></li>
+        </ul>
+    </section>
+
+    <style type="text/css">
+    .post-toc {
+        max-width: 100%;
+        max-height: 80%;
+        font-family: Athelas, STHeiti, Microsoft Yahei, serif;
+        font-size: 12px;
+        word-wrap: break-word;
+        white-space: nowrap;
+        z-index: 999;
+        cursor: pointer;
+    }
+
+    .post-toc .post-toc-title {
+        color: #6E7173;
+        line-height: 2.7;
+        margin-top: 0;
+        font-size: 16px;
+        border-bottom: 1px solid #ddd;
+        display: block;
+    }
+
+    .post-toc .post-toc-content {
+        font-size: 15px;
+    }
+
+    .post-toc .post-toc-content>nav>ul {
+        margin: 10px 0;
+        margin-block: 0.5rem;
+        padding-inline: 0.1rem;
+    }
+
+    .post-toc .post-toc-content ul {
+        list-style: none;
+        line-height: 1.8em;
+    }
+
+    .post-toc .post-toc-content ul ul {
+        padding-left: 15px;
+        font-size: 0.8rem;
+    }
+
+    @media print,
+    screen and (max-width:1057px) {
+        .post-toc {
+            display: none;
+        }
+    }
+</style>
+<div class="post-toc">
+    <h2 class="post-toc-title">目录</h2>
+    <div class="post-toc-content">
+        <nav id="TableOfContents">
+  <ul>
+    <li>
+      <ul>
+        <li>
+          <ul>
+            <li><a href="#简介">简介</a></li>
+            <li><a href="#问题提出">问题提出</a></li>
+            <li><a href="#解决方案">解决方案</a></li>
+            <li><a href="#源码解析">源码解析</a>
+              <ul>
+                <li><a href="#更改socket-recv-buffer-size默认值">更改<code>socket-recv-buffer-size</code>默认值</a></li>
+                <li><a href="#socket-recv-buffer-size的设置时机"><code>socket-recv-buffer-size</code>的设置时机</a></li>
+              </ul>
+            </li>
+          </ul>
+        </li>
+      </ul>
+    </li>
+  </ul>
+</nav>
+    </div>
+</div>
+<script type="text/javascript">
+    $(document).ready(function () {
+        var postToc = $(".post-toc");
+        if (postToc.length) {
+
+            var t = postToc.offset().top - 20,
+                a = {
+                    start: {
+                        position: "unset",
+                        top: "unset",
+                        overflow: "unset",
+                        paddingRight: "unset"
+                    },
+                    process: {
+                        position: "fixed",
+                        top: 20,
+                        overflow: "hidden auto",
+                        paddingRight: "5em"
+                    },
+                };
+
+            var e = $(window).scrollTop();
+            e < t ? postToc.css(a.start) : postToc.css(a.process)
+
+            $(window).scroll(function () {
+                var e = $(window).scrollTop();
+                e < t ? postToc.css(a.start) : postToc.css(a.process)
+            })
+        }
+    })
+</script>
+    
+</div>
+            </div>
+        </div>
+    </div>
+</body>
+
+</html>

@@ -1,0 +1,606 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    
+
+    <title>Debian音量控制 | qydysky&#39;s blog</title>
+    <meta property="og:title" content="Debian音量控制 - qydysky&#39;s blog">
+    <meta property="og:type" content="article">
+        
+    <meta property="article:published_time" content='2021-04-02T00:00:00&#43;08:00'>
+        
+        
+    <meta property="article:modified_time" content='2021-04-02T00:00:00&#43;08:00'>
+        
+    <meta name="Keywords" content="qydysky,blog">
+    <meta name="description" content="Debian音量控制">
+        
+    <meta name="author" content="qydysky">
+    <meta property="og:url" content="/post/20210402debain/">
+    <link rel="shortcut icon" href='/favicon.ico'  type="image/x-icon">
+
+    <link rel="stylesheet" href='/css/normalize.css'>
+    <link rel="stylesheet" href='/css/style.css'>
+
+    
+        <link rel="stylesheet" href="/main.15dcb265081424711307094b8e6324bd.css" integrity="md5-FdyyZQgUJHETBwlLjmMkvQ==">
+    
+
+    <script type="text/javascript" src="/js/jquery/3.6.0/jquery.min.js"></script>
+
+    
+        <script src="/main.1237e059eab46d4c84e9924e8e2ec11f.js" integrity="md5-EjfgWeq0bUyE6ZJOji7BHw=="></script>
+    
+    
+    
+    
+    
+    
+    
+    
+</head>
+
+
+<body>
+    <header id="header" class="clearfix">
+    <div class="container">
+        <div class="col-group">
+            <div class="site-name ">
+                
+                    <a id="logo" href="/">
+                        qydysky&#39;s blog
+                    </a>
+                
+                <p class="description">日常记录</p>
+            </div>
+            <div>
+                <nav id="nav-menu" class="clearfix">
+                    <a class="current" href="/">首页</a>
+                    
+                    <a  href="/tags/" title="标签">标签</a>
+                    
+                    <a  href="/archives/" title="归档">归档</a>
+                    
+                    <a  href="/search/" title="查找">查找</a>
+                    
+                    <a  href="/about/" title="关于">关于</a>
+                    
+                </nav>
+            </div>
+        </div>
+    </div>
+</header>
+
+    <div id="body">
+        <div class="container">
+            <div class="col-group">
+
+                <div class="col-8" id="main">
+                    
+<div class="res-cons">
+    <article class="post">
+        <header>
+            <h1 class="post-title">Debian音量控制</h1>
+        </header>
+        <date class="post-meta meta-date">
+            2021年4月2日
+        </date>
+        
+        
+        <div class="post-meta meta-tags">
+            
+            <ul class="clearfix">
+                
+                <li><a href='/tags/amixer'>amixer</a></li>
+                
+            </ul>
+            
+        </div>
+        
+        <div class="clear" style="display: none">
+            <div class="toc-article">
+                <div class="toc-title">文章目录</div>
+            </div>
+        </div>
+        
+        <div class="post-content">
+            <h3 id="简介">简介</h3>
+<p>作为Debian的长期笔记本用户，在入坑时踩过的坑之一便是音量控制。在使用扬声器与耳机时，总会遇到一个声音过大的问题。而这在windows平台几乎不会碰到。本文描述当时的我是如何解决这个问题。</p>
+<p>本文部分引用了资料<a href="https://bbs.archlinux.org/viewtopic.php?id=225312">pulseaudio, analog-output.conf.common, volume-limit</a></p>
+<h3 id="amixer">amixer</h3>
+<p>amixer命令主要用于linux下音频的接口配置，下面展示这个程序的帮助文档。</p>
+<div class="highlight"><div style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">
+<table style="border-spacing:0;padding:0;margin:0;border:0;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
+<pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">1
+</span></code></pre></td>
+<td style="vertical-align:top;padding:0;margin:0;border:0;;width:100%">
+<pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>amixer -h
+</span></span></code></pre></td></tr></table>
+</div>
+</div><div class="highlight"><div style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">
+<table style="border-spacing:0;padding:0;margin:0;border:0;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
+<pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 1
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 2
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 3
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 4
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 5
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 6
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 7
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 8
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 9
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">10
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">11
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">12
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">13
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">14
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">15
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">16
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">17
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">18
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">19
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">20
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">21
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">22
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">23
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">24
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">25
+</span></code></pre></td>
+<td style="vertical-align:top;padding:0;margin:0;border:0;;width:100%">
+<pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>Usage: amixer &lt;options&gt; <span style="color:#000;font-weight:bold">[</span>command<span style="color:#000;font-weight:bold">]</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>Available options:
+</span></span><span style="display:flex;"><span>  -h,--help       this <span style="color:#0086b3">help</span>
+</span></span><span style="display:flex;"><span>  -c,--card N     <span style="color:#000;font-weight:bold">select</span> the card
+</span></span><span style="display:flex;"><span>  -D,--device N   <span style="color:#000;font-weight:bold">select</span> the device, default <span style="color:#d14">&#39;default&#39;</span>
+</span></span><span style="display:flex;"><span>  -d,--debug      debug mode
+</span></span><span style="display:flex;"><span>  -n,--nocheck    <span style="color:#000;font-weight:bold">do</span> not perform range checking
+</span></span><span style="display:flex;"><span>  -v,--version    print version of this program
+</span></span><span style="display:flex;"><span>  -q,--quiet      be quiet
+</span></span><span style="display:flex;"><span>  -i,--inactive   show also inactive controls
+</span></span><span style="display:flex;"><span>  -a,--abstract L <span style="color:#000;font-weight:bold">select</span> abstraction level <span style="color:#000;font-weight:bold">(</span>none or basic<span style="color:#000;font-weight:bold">)</span>
+</span></span><span style="display:flex;"><span>  -s,--stdin      Read and execute commands from stdin sequentially
+</span></span><span style="display:flex;"><span>  -R,--raw-volume Use the raw value <span style="color:#000;font-weight:bold">(</span>default<span style="color:#000;font-weight:bold">)</span>
+</span></span><span style="display:flex;"><span>  -M,--mapped-volume Use the mapped volume
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>Available commands:
+</span></span><span style="display:flex;"><span>  scontrols       show all mixer simple controls
+</span></span><span style="display:flex;"><span>  scontents       show contents of all mixer simple controls <span style="color:#000;font-weight:bold">(</span>default <span style="color:#0086b3">command</span><span style="color:#000;font-weight:bold">)</span>
+</span></span><span style="display:flex;"><span>  sset sID P      <span style="color:#0086b3">set</span> contents <span style="color:#000;font-weight:bold">for</span> one mixer simple control
+</span></span><span style="display:flex;"><span>  sget sID        get contents <span style="color:#000;font-weight:bold">for</span> one mixer simple control
+</span></span><span style="display:flex;"><span>  controls        show all controls <span style="color:#000;font-weight:bold">for</span> given card
+</span></span><span style="display:flex;"><span>  contents        show contents of all controls <span style="color:#000;font-weight:bold">for</span> given card
+</span></span><span style="display:flex;"><span>  cset cID P      <span style="color:#0086b3">set</span> control contents <span style="color:#000;font-weight:bold">for</span> one control
+</span></span><span style="display:flex;"><span>  cget cID        get control contents <span style="color:#000;font-weight:bold">for</span> one control
+</span></span></code></pre></td></tr></table>
+</div>
+</div><h3 id="查看默认声卡的配置">查看默认声卡的配置。</h3>
+<p>通过amixer命令，可以查看默认声卡设置。使用如下命令。</p>
+<div class="highlight"><div style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">
+<table style="border-spacing:0;padding:0;margin:0;border:0;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
+<pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">1
+</span></code></pre></td>
+<td style="vertical-align:top;padding:0;margin:0;border:0;;width:100%">
+<pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>amixer -c <span style="color:#099">0</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>输出非常详细，此处我截取了需要的一部分。</p>
+<div class="highlight"><div style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">
+<table style="border-spacing:0;padding:0;margin:0;border:0;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
+<pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 1
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 2
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 3
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 4
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 5
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 6
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 7
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 8
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 9
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">10
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">11
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">12
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">13
+</span></code></pre></td>
+<td style="vertical-align:top;padding:0;margin:0;border:0;;width:100%">
+<pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>Simple mixer control <span style="color:#d14">&#39;Master&#39;</span>,0
+</span></span><span style="display:flex;"><span>  Capabilities: pvolume pvolume-joined pswitch pswitch-joined
+</span></span><span style="display:flex;"><span>  Playback channels: Mono
+</span></span><span style="display:flex;"><span>  Limits: Playback <span style="color:#099">0</span> - <span style="color:#099">87</span>
+</span></span><span style="display:flex;"><span>  Mono: Playback <span style="color:#099">33</span> <span style="color:#000;font-weight:bold">[</span>38%<span style="color:#000;font-weight:bold">]</span> <span style="color:#000;font-weight:bold">[</span>-40.50dB<span style="color:#000;font-weight:bold">]</span> <span style="color:#000;font-weight:bold">[</span>on<span style="color:#000;font-weight:bold">]</span>
+</span></span><span style="display:flex;"><span>Simple mixer control <span style="color:#d14">&#39;Headphone&#39;</span>,0
+</span></span><span style="display:flex;"><span>  Capabilities: pvolume pswitch
+</span></span><span style="display:flex;"><span>  Playback channels: Front Left - Front Right
+</span></span><span style="display:flex;"><span>  Limits: Playback <span style="color:#099">0</span> - <span style="color:#099">87</span>
+</span></span><span style="display:flex;"><span>  Mono:
+</span></span><span style="display:flex;"><span>  Front Left: Playback <span style="color:#099">0</span> <span style="color:#000;font-weight:bold">[</span>0%<span style="color:#000;font-weight:bold">]</span> <span style="color:#000;font-weight:bold">[</span>-65.25dB<span style="color:#000;font-weight:bold">]</span> <span style="color:#000;font-weight:bold">[</span>off<span style="color:#000;font-weight:bold">]</span>
+</span></span><span style="display:flex;"><span>  Front Right: Playback <span style="color:#099">0</span> <span style="color:#000;font-weight:bold">[</span>0%<span style="color:#000;font-weight:bold">]</span> <span style="color:#000;font-weight:bold">[</span>-65.25dB<span style="color:#000;font-weight:bold">]</span> <span style="color:#000;font-weight:bold">[</span>off<span style="color:#000;font-weight:bold">]</span>
+</span></span><span style="display:flex;"><span>  ...
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>从输出可以看出音量等级从0-87,当前主音量在33。</p>
+<h3 id="设置音量限制">设置音量限制</h3>
+<p>通过改变配置文件，可以起到设置音量限制的效果。先查看有哪些配置文件。</p>
+<div class="highlight"><div style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">
+<table style="border-spacing:0;padding:0;margin:0;border:0;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
+<pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">1
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">2
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">3
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">4
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">5
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">6
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">7
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">8
+</span></code></pre></td>
+<td style="vertical-align:top;padding:0;margin:0;border:0;;width:100%">
+<pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>ls /usr/share/pulseaudio/alsa-mixer/paths
+</span></span><span style="display:flex;"><span>analog-input-aux.conf            analog-input-headset-mic.conf          analog-input-rear-mic.conf       analog-output-lineout.conf         hdmi-output-3.conf         steelseries-arctis-input.conf
+</span></span><span style="display:flex;"><span>analog-input.conf                analog-input-internal-mic-always.conf  analog-input-tvtuner.conf        analog-output-mono.conf            hdmi-output-4.conf         steelseries-arctis-output-mono.conf
+</span></span><span style="display:flex;"><span>analog-input.conf.common         analog-input-internal-mic.conf         analog-input-video.conf          analog-output-speaker-always.conf  hdmi-output-5.conf         steelseries-arctis-output-stereo.conf
+</span></span><span style="display:flex;"><span>analog-input-dock-mic.conf       analog-input-linein.conf               analog-output.conf               analog-output-speaker.conf         hdmi-output-6.conf
+</span></span><span style="display:flex;"><span>analog-input-fm.conf             analog-input-mic.conf                  analog-output.conf.common        hdmi-output-0.conf                 hdmi-output-7.conf
+</span></span><span style="display:flex;"><span>analog-input-front-mic.conf      analog-input-mic.conf.common           analog-output-headphones-2.conf  hdmi-output-1.conf                 iec958-stereo-input.conf
+</span></span><span style="display:flex;"><span>analog-input-headphone-mic.conf  analog-input-mic-line.conf             analog-output-headphones.conf    hdmi-output-2.conf                 iec958-stereo-output.conf
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>或许你的配置文件不在此处，可以使用<code>find /usr -name alsa-mixer</code>查找文件所在。</p>
+<p>这个目录下有许多配置文件，但我们为了解决耳机音量过大的问题，修改对应的配置文件<code>analog-output-headphones.conf</code>。修改其中一项<code>[Element Master]</code>的键值。</p>
+<div class="highlight"><div style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">
+<table style="border-spacing:0;padding:0;margin:0;border:0;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
+<pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">1
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">2
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">3
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">4
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">5
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">6
+</span></code></pre></td>
+<td style="vertical-align:top;padding:0;margin:0;border:0;;width:100%">
+<pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-conf" data-lang="conf"><span style="display:flex;"><span><span style="color:#a61717;background-color:#e3d2d2">[</span><span style="color:#008080">Element</span> <span style="color:#008080">Master</span><span style="color:#a61717;background-color:#e3d2d2">]</span>
+</span></span><span style="display:flex;"><span><span style="color:#008080">switch</span> <span style="color:#000;font-weight:bold">=</span> <span style="color:#008080">mute</span>
+</span></span><span style="display:flex;"><span><span style="color:#008080">volume</span> <span style="color:#000;font-weight:bold">=</span> <span style="color:#008080">merge</span>
+</span></span><span style="display:flex;"><span><span style="color:#008080">volume-limit</span> <span style="color:#000;font-weight:bold">=</span> <span style="color:#008080">35</span> <span style="color:#998;font-style:italic">#添加此行
+</span></span></span><span style="display:flex;"><span><span style="color:#998;font-style:italic"></span><span style="color:#008080">override-map.1</span> <span style="color:#000;font-weight:bold">=</span> <span style="color:#008080">all</span>
+</span></span><span style="display:flex;"><span><span style="color:#008080">override-map.2</span> <span style="color:#000;font-weight:bold">=</span> <span style="color:#008080">all-left</span>,<span style="color:#008080">all-right</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>注意不要添加到其他项下，比如<code>[Element Headphone]</code>。否则在大音量下会破音。</p>
+<p>同理，若你想修改其他设备的限制，可以修改对应的配置文件。如扬声器，则可以编辑<code>analog-output-speaker.conf</code>。</p>
+<h3 id="应用配置">应用配置</h3>
+<p>上述配置文件在修改保存后并不会自动应用，需要进行手动重启进程。重启后可以测试音量效果，重复调整，应用，直到满意。</p>
+<div class="highlight"><div style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">
+<table style="border-spacing:0;padding:0;margin:0;border:0;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
+<pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">1
+</span></code></pre></td>
+<td style="vertical-align:top;padding:0;margin:0;border:0;;width:100%">
+<pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>pulseaudio -k
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p><strong>该配置文件会在<code>pulseaudio</code>更新后失效。所以更新后还需要重复进行此操作。</strong></p>
+<h3 id="浏览器播放视频时音量过小的问题">浏览器播放视频时音量过小的问题</h3>
+<p>有时在看视频/看直播时，有时觉得音量过小。平时用的是火狐，有这样一个可以调整音量增益的插件。<a href="https://github.com/unrelentingtech/soundfixer">soundfixer</a>。</p>
+
+        </div>
+
+        
+<div class="post-archive">
+    <ul class="post-copyright">
+        <li><strong>原文作者：</strong><a rel="author" href="/">qydysky</a></li>
+        <li style="word-break:break-all"><strong>原文链接：</strong><a href="/post/20210402debain/">/post/20210402debain/</a></li>
+        <li><strong>版权声明：</strong>本作品采用<a rel="license" href="https://creativecommons.org/licenses/by-nc-nd/4.0/">知识共享署名-非商业性使用-禁止演绎 4.0 国际许可协议</a>进行许可，非商业转载请注明出处（作者，原文链接），商业转载请联系作者获得授权。</li>
+    </ul>
+</div>
+<br/>
+
+
+
+        
+
+<div class="post-archive">
+    <h2 class="related-title">更多</h2>
+    <ul class="listing">
+        
+        <li><a href="/post/20210331caddy/">Caddy的配置与运行</a></li>
+        
+        <li><a href="/post/20210331hexo/">hexo安装、配置及博客生成全流程</a></li>
+        
+        <li><a href="/about/">关于</a></li>
+        
+        <li><a href="/tags/">标签</a></li>
+        
+        <li><a href="/archives/">归档</a></li>
+        
+    </ul>
+</div>
+
+
+    </article>
+    
+    
+
+    
+    
+</div>
+
+                    <footer id="footer">
+    <div>
+        &copy; 2024 <a href="/">qydysky&#39;s blog By qydysky</a>
+        
+    </div>
+    <br />
+    <div>
+        <a href="https://icp.gov.moe/?keyword=20240909" target="_blank">萌ICP备20240909号</a>
+    </div>
+    <br />
+    <div>
+        <div class="github-badge">
+            <a href="https://gohugo.io/" target="_black" rel="nofollow"><span class="badge-subject">Powered by</span><span class="badge-value bg-blue">Hugo</span></a>
+        </div>
+        <div class="github-badge">
+            <a href="https://github.com/flysnow-org/maupassant-hugo" target="_black"><span class="badge-subject">Theme</span><span class="badge-value bg-yellowgreen">Maupassant</span></a>
+        </div>
+    </div>
+</footer>
+
+
+    
+    <script type="text/javascript">
+        window.MathJax = {
+            tex2jax: {
+                inlineMath: [['$', '$']],
+                processEscapes: true
+                }
+            };
+    </script>
+    <script src='/js/mathjax/2.7.5/MathJax.js?config=TeX-MML-AM_CHTML' async></script>
+
+<a id="rocket" href="#top"></a>
+<script type="text/javascript" src='/js/totop.js?v=0.0.0' async=""></script>
+
+
+
+
+
+
+                </div>
+
+                <div id="secondary">
+    <section class="widget">
+        <form id="search" action='/search/' method="get" accept-charset="utf-8" target="_blank" _lpchecked="1">
+      
+      <input type="text" name="q" maxlength="20" placeholder="Search">
+      <input type="hidden" name="sitesearch" value="/">
+      <button type="submit" class="submit icon-search"></button>
+</form>
+    </section>
+    
+    
+
+    <section class="widget">
+        <h3 class="widget-title"><a href='/tags/'>标签</a></h3>
+<div class="tagcloud">
+    
+    <a href="/tags/Caddy/">Caddy</a>
+    
+    <a href="/tags/amixer/">amixer</a>
+    
+    <a href="/tags/ap/">ap</a>
+    
+    <a href="/tags/aria2/">aria2</a>
+    
+    <a href="/tags/c/">c</a>
+    
+    <a href="/tags/canvas/">canvas</a>
+    
+    <a href="/tags/certbot/">certbot</a>
+    
+    <a href="/tags/crontab/">crontab</a>
+    
+    <a href="/tags/docker/">docker</a>
+    
+    <a href="/tags/ffmpeg/">ffmpeg</a>
+    
+    <a href="/tags/flv/">flv</a>
+    
+    <a href="/tags/fmp4/">fmp4</a>
+    
+    <a href="/tags/frp/">frp</a>
+    
+    <a href="/tags/gateway/">gateway</a>
+    
+    <a href="/tags/golang/">golang</a>
+    
+    <a href="/tags/hexo/">hexo</a>
+    
+    <a href="/tags/javascript/">javascript</a>
+    
+    <a href="/tags/kde/">kde</a>
+    
+    <a href="/tags/kioexec/">kioexec</a>
+    
+    <a href="/tags/l4d2/">l4d2</a>
+    
+    <a href="/tags/legado/">legado</a>
+    
+    <a href="/tags/letsencrypt/">letsencrypt</a>
+    
+    <a href="/tags/linux/">linux</a>
+    
+    <a href="/tags/mock/">mock</a>
+    
+    <a href="/tags/mp4/">mp4</a>
+    
+    <a href="/tags/mysql/">mysql</a>
+    
+    <a href="/tags/ncurses/">ncurses</a>
+    
+    <a href="/tags/nodejs/">nodejs</a>
+    
+    <a href="/tags/nvm/">nvm</a>
+    
+    <a href="/tags/oracle/">oracle</a>
+    
+    <a href="/tags/plugin/">plugin</a>
+    
+    <a href="/tags/pocketbase/">pocketbase</a>
+    
+    <a href="/tags/regExp/">regExp</a>
+    
+    <a href="/tags/sh/">sh</a>
+    
+    <a href="/tags/shell/">shell</a>
+    
+    <a href="/tags/snap/">snap</a>
+    
+    <a href="/tags/sourcemod/">sourcemod</a>
+    
+    <a href="/tags/spring/">spring</a>
+    
+    <a href="/tags/truenas/">truenas</a>
+    
+    <a href="/tags/url/">url</a>
+    
+    <a href="/tags/vs/">vs</a>
+    
+    <a href="/tags/vue-element-admin/">vue-element-admin</a>
+    
+    <a href="/tags/wifi7/">wifi7</a>
+    
+    <a href="/tags/xiaomi/">xiaomi</a>
+    
+    <a href="/tags/%E6%97%A5%E5%B8%B8/">日常</a>
+    
+</div>
+    </section>
+
+    
+<section class="widget">
+    <h3 class="widget-title">友情链接</h3>
+    <ul class="widget-list">
+        
+        <li>
+            <a target="_blank" href="https://vcb-s.com/" title="VCB-Studio">VCB-Studio</a>
+        </li>
+        
+    </ul>
+</section>
+
+
+    <section class="widget">
+        <h3 class="widget-title">其它</h3>
+        <ul class="widget-list">
+            <li><a href="/index.xml">文章 RSS</a></li>
+        </ul>
+    </section>
+
+    <style type="text/css">
+    .post-toc {
+        max-width: 100%;
+        max-height: 80%;
+        font-family: Athelas, STHeiti, Microsoft Yahei, serif;
+        font-size: 12px;
+        word-wrap: break-word;
+        white-space: nowrap;
+        z-index: 999;
+        cursor: pointer;
+    }
+
+    .post-toc .post-toc-title {
+        color: #6E7173;
+        line-height: 2.7;
+        margin-top: 0;
+        font-size: 16px;
+        border-bottom: 1px solid #ddd;
+        display: block;
+    }
+
+    .post-toc .post-toc-content {
+        font-size: 15px;
+    }
+
+    .post-toc .post-toc-content>nav>ul {
+        margin: 10px 0;
+        margin-block: 0.5rem;
+        padding-inline: 0.1rem;
+    }
+
+    .post-toc .post-toc-content ul {
+        list-style: none;
+        line-height: 1.8em;
+    }
+
+    .post-toc .post-toc-content ul ul {
+        padding-left: 15px;
+        font-size: 0.8rem;
+    }
+
+    @media print,
+    screen and (max-width:1057px) {
+        .post-toc {
+            display: none;
+        }
+    }
+</style>
+<div class="post-toc">
+    <h2 class="post-toc-title">目录</h2>
+    <div class="post-toc-content">
+        <nav id="TableOfContents">
+  <ul>
+    <li>
+      <ul>
+        <li>
+          <ul>
+            <li><a href="#简介">简介</a></li>
+            <li><a href="#amixer">amixer</a></li>
+            <li><a href="#查看默认声卡的配置">查看默认声卡的配置。</a></li>
+            <li><a href="#设置音量限制">设置音量限制</a></li>
+            <li><a href="#应用配置">应用配置</a></li>
+            <li><a href="#浏览器播放视频时音量过小的问题">浏览器播放视频时音量过小的问题</a></li>
+          </ul>
+        </li>
+      </ul>
+    </li>
+  </ul>
+</nav>
+    </div>
+</div>
+<script type="text/javascript">
+    $(document).ready(function () {
+        var postToc = $(".post-toc");
+        if (postToc.length) {
+
+            var t = postToc.offset().top - 20,
+                a = {
+                    start: {
+                        position: "unset",
+                        top: "unset",
+                        overflow: "unset",
+                        paddingRight: "unset"
+                    },
+                    process: {
+                        position: "fixed",
+                        top: 20,
+                        overflow: "hidden auto",
+                        paddingRight: "5em"
+                    },
+                };
+
+            var e = $(window).scrollTop();
+            e < t ? postToc.css(a.start) : postToc.css(a.process)
+
+            $(window).scroll(function () {
+                var e = $(window).scrollTop();
+                e < t ? postToc.css(a.start) : postToc.css(a.process)
+            })
+        }
+    })
+</script>
+    
+</div>
+            </div>
+        </div>
+    </div>
+</body>
+
+</html>

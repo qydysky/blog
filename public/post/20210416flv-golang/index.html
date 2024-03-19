@@ -1,0 +1,1016 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    
+
+    <title>flv文件解析及golang的流实现 | qydysky&#39;s blog</title>
+    <meta property="og:title" content="flv文件解析及golang的流实现 - qydysky&#39;s blog">
+    <meta property="og:type" content="article">
+        
+    <meta property="article:published_time" content='2021-04-16T00:00:00&#43;08:00'>
+        
+        
+    <meta property="article:modified_time" content='2021-04-16T00:00:00&#43;08:00'>
+        
+    <meta name="Keywords" content="qydysky,blog">
+    <meta name="description" content="flv文件解析及golang的流实现">
+        
+    <meta name="author" content="qydysky">
+    <meta property="og:url" content="/post/20210416flv-golang/">
+    <link rel="shortcut icon" href='/favicon.ico'  type="image/x-icon">
+
+    <link rel="stylesheet" href='/css/normalize.css'>
+    <link rel="stylesheet" href='/css/style.css'>
+
+    
+        <link rel="stylesheet" href="/main.15dcb265081424711307094b8e6324bd.css" integrity="md5-FdyyZQgUJHETBwlLjmMkvQ==">
+    
+
+    <script type="text/javascript" src="/js/jquery/3.6.0/jquery.min.js"></script>
+
+    
+        <script src="/main.1237e059eab46d4c84e9924e8e2ec11f.js" integrity="md5-EjfgWeq0bUyE6ZJOji7BHw=="></script>
+    
+    
+    
+    
+    
+    
+    
+    
+</head>
+
+
+<body>
+    <header id="header" class="clearfix">
+    <div class="container">
+        <div class="col-group">
+            <div class="site-name ">
+                
+                    <a id="logo" href="/">
+                        qydysky&#39;s blog
+                    </a>
+                
+                <p class="description">日常记录</p>
+            </div>
+            <div>
+                <nav id="nav-menu" class="clearfix">
+                    <a class="current" href="/">首页</a>
+                    
+                    <a  href="/tags/" title="标签">标签</a>
+                    
+                    <a  href="/archives/" title="归档">归档</a>
+                    
+                    <a  href="/search/" title="查找">查找</a>
+                    
+                    <a  href="/about/" title="关于">关于</a>
+                    
+                </nav>
+            </div>
+        </div>
+    </div>
+</header>
+
+    <div id="body">
+        <div class="container">
+            <div class="col-group">
+
+                <div class="col-8" id="main">
+                    
+<div class="res-cons">
+    <article class="post">
+        <header>
+            <h1 class="post-title">flv文件解析及golang的流实现</h1>
+        </header>
+        <date class="post-meta meta-date">
+            2021年4月16日
+        </date>
+        
+        
+        <div class="post-meta meta-tags">
+            
+            <ul class="clearfix">
+                
+                <li><a href='/tags/flv'>flv</a></li>
+                
+                <li><a href='/tags/golang'>golang</a></li>
+                
+            </ul>
+            
+        </div>
+        
+        <div class="clear" style="display: none">
+            <div class="toc-article">
+                <div class="toc-title">文章目录</div>
+            </div>
+        </div>
+        
+        <div class="post-content">
+            <p>注意，本文待查证！</p>
+<h3 id="简介">简介</h3>
+<p>最近在使用<a href="https://github.com/qydysky/bili_danmu">bilibili直播姬</a>的时候，想在局域网同时观看保存下来的直播流，本文记录flv的文件格式，将保存下的flv文件作为直播流时的golang实现及踩的一些坑。</p>
+<h3 id="flv文件结构">flv文件结构</h3>
+<p>本节引用来自众多文章：</p>
+<ul>
+<li><a href="https://www.adobe.com/content/dam/acom/en/devnet/flv/video_file_format_spec_v10_1.pdf">官方文档</a></li>
+<li><a href="https://www.cnblogs.com/poissonnotes/p/7744283.html">flv结构分析</a></li>
+<li><a href="https://blog.csdn.net/chgaowei/article/details/51243345">FLV文件格式官方规范详解</a></li>
+<li><a href="https://blog.ibaoger.com/2017/06/04/flv-file-format/">一张图看懂FLV文件格式 </a></li>
+<li><a href="https://www.cnblogs.com/cy568searchx/p/4415495.html">H264(NAL简介与I帧判断)</a></li>
+<li><a href="https://blog.csdn.net/cabbage2008/article/details/50449664">FLV科普10 FLV视频头信息</a></li>
+<li><a href="http://www.360doc.com/content/16/1013/17/474846_598171645.shtml">FLV文件(H264 + AAC)格式超详细分析</a></li>
+</ul>
+<p>flv文件结构简单，这里记录一下flv文件的基本结构，以便日后完善功能使用。</p>
+<h4 id="flv">flv</h4>
+<table>
+<thead>
+<tr>
+<th>flv头</th>
+<th>flv内容</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>9 bytes</td>
+<td>? bytes</td>
+</tr>
+</tbody>
+</table>
+<h4 id="flv头">flv头</h4>
+<table>
+<thead>
+<tr>
+<th>签名</th>
+<th>版本</th>
+<th>媒体标识位</th>
+<th>flv头长度</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>3 bytes</td>
+<td>1 byte</td>
+<td>1 byte</td>
+<td>4 bytes</td>
+</tr>
+</tbody>
+</table>
+<p>签名：固定使用<code>FLV</code>(0x46 0x4c 0x56)。</p>
+<p>版本：当前版本号<code>1</code>(0x01)。</p>
+<p>媒体标识位:</p>
+<table>
+<thead>
+<tr>
+<th>保留</th>
+<th>音频标识</th>
+<th>保留</th>
+<th>视频标识</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>5 bits</td>
+<td>1 bit</td>
+<td>1 bit</td>
+<td>1 bit</td>
+</tr>
+</tbody>
+</table>
+<p>保留：必须是<code>0</code>。</p>
+<p>音频/视频标示：有则为<code>1</code>。</p>
+<p>flv头长度：必须为<code>9</code>(0x09)。</p>
+<p>实例：</p>
+<pre tabindex="0"><code>46 4C 56 01 05 00 00 00 09
+</code></pre><h4 id="flv内容">flv内容</h4>
+<table>
+<thead>
+<tr>
+<th>前一tag的长度</th>
+<th>tag头</th>
+<th>tag内容</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>4 bytes</td>
+<td>11 bytes</td>
+<td>? bytes</td>
+</tr>
+</tbody>
+</table>
+<p>前一tag的长度：首tag为<code>0</code>(0x00 0x00 0x00 0x00)，其他的为上一个tag头+tag内容的长度。</p>
+<p>tag头：</p>
+<table>
+<thead>
+<tr>
+<th>tag信息</th>
+<th>tag内容长度</th>
+<th>相对时间戳</th>
+<th>扩展时间戳</th>
+<th>流id</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1 byte</td>
+<td>3 bytes</td>
+<td>3 bytes</td>
+<td>1 byte</td>
+<td>3 bytes</td>
+</tr>
+</tbody>
+</table>
+<p>tag信息：</p>
+<table>
+<thead>
+<tr>
+<th>保留</th>
+<th>加密标识</th>
+<th>tag类型</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>2 bits</td>
+<td>1 bit</td>
+<td>5 bits</td>
+</tr>
+</tbody>
+</table>
+<p>保留：必须是<code>0</code>。</p>
+<p>加密标识：加密<code>1</code>、未加密<code>0</code>。</p>
+<p>tag类型：Script脚本<code>1 0010</code>、视频<code>0 1001</code>、音频<code>0 1000</code>。</p>
+<p>实例：</p>
+<pre tabindex="0"><code>未加密的
+    Script脚本`0x12`
+    视频`0x09`
+    音频`0x08`
+</code></pre><p>tag内容长度：记录tag内容的长度。</p>
+<p>相对时间戳：相对第一个tag的时间戳，单位毫秒。第一个Script脚本、视频、音频tag的时间戳为<code>0</code>(0x00 0x00 0x00)</p>
+<p>扩展时间戳：当相对时间戳不够用时，可将此字节拼接到相对时间戳之前，以此进行扩展。</p>
+<p>流id：固定为<code>0</code>(0x00 0x00 0x00)</p>
+<p>实例：</p>
+<pre tabindex="0"><code>12 00 02 AF 00 00 00 00 00 00 00
+...
+00 00 02 BA
+</code></pre><h4 id="tag内容">tag内容</h4>
+<p>上述提到有3种tag。其中Script脚本是用来记录一些视频的基本信息，由于此处暂时没使用到，留待日后研究。</p>
+<h5 id="视频tag">视频tag</h5>
+<p>tag类型为视频时，tag内容还具有视频头。</p>
+<p>视频：</p>
+<table>
+<thead>
+<tr>
+<th>帧类型</th>
+<th>编码类型</th>
+<th>视频数据</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>4 bits</td>
+<td>4 bits</td>
+<td>? bits</td>
+</tr>
+</tbody>
+</table>
+<p>帧类型：有以下5种。</p>
+<ul>
+<li>关键帧<code>1</code>(0x1)</li>
+<li>中间帧<code>2</code>(0x2)</li>
+<li>一次性中间帧<code>3</code>(0x3)</li>
+<li>生成关键帧<code>4</code>(0x4)</li>
+<li>视频信息帧<code>5</code>(0x5)</li>
+</ul>
+<p>编码类型：有若干种详见官方文档，其中常用的有AVC H264<code>7</code>(0x7)。</p>
+<p>视频数据：当编码类型为AVC时，其具有AVC头部，但此处暂未用到，日后补充。</p>
+<p>实例：末尾的<code>17</code></p>
+<pre tabindex="0"><code>09 00 00 2D 00 00 00 00 00 00 00 17
+</code></pre><h5 id="音频tag">音频tag</h5>
+<p>tag类型为音频时，tag内容还具有音频头。</p>
+<p>音频：</p>
+<table>
+<thead>
+<tr>
+<th>音频格式</th>
+<th>采样率</th>
+<th>位宽</th>
+<th>通道</th>
+<th>音频数据</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>4 bits</td>
+<td>2 bits</td>
+<td>1 bit</td>
+<td>1 bit</td>
+<td>? bits</td>
+</tr>
+</tbody>
+</table>
+<p>音频格式：有若干种，详见官方文档，其中常用的有AAC<code>10</code>(0xa)。</p>
+<p>采样率：有以下4种。</p>
+<ul>
+<li>5.5kHz<code>0</code>(00)</li>
+<li>11kHz<code>1</code>(01)</li>
+<li>22kHz<code>2</code>(10)</li>
+<li>44kHz<code>3</code>(11)</li>
+</ul>
+<p>位宽：8bit：<code>0</code>(0)、16bit：<code>1</code>(1)。</p>
+<p>通道：单声道：<code>0</code>(0)、双声道：<code>1</code>(1)。</p>
+<p>音频数据：当音频格式为AAC时，有AAC头，此处暂未用到，日后补充。</p>
+<p>实例：末尾的<code>AF</code></p>
+<pre tabindex="0"><code>08 00 00 04 00 00 00 00 00 00 00 AF
+</code></pre><h3 id="golang转flv直播流">golang转flv直播流</h3>
+<p>本节暂时仅针对bilibili直播流保存中再转直播流的情况，其他情况需要再做研究，如已下载完成的直播流转直播，会<code>Read</code>到许多<code>EOF</code>，暂时直接使用<code>http.FileServer</code>进行服务。</p>
+<div class="highlight"><div style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">
+<table style="border-spacing:0;padding:0;margin:0;border:0;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
+<pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">1
+</span></code></pre></td>
+<td style="vertical-align:top;padding:0;margin:0;border:0;;width:100%">
+<pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-go" data-lang="go"><span style="display:flex;"><span>http.<span style="color:#900;font-weight:bold">FileServer</span>(http.<span style="color:#900;font-weight:bold">Dir</span>(base_dir)).<span style="color:#900;font-weight:bold">ServeHTTP</span>(w,r)
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>本节转换后的flv直播流在播放时会有音画不同步的情况，详见<a href="https://github.com/bilibili/flv.js/pull/354">issues</a>。后续会fork<a href="https://github.com/bilibili/flv.js">flv.js</a>来尝试解决此问题。</p>
+<p>根据对上述flv格式的了解，可以得出直播流的生成方法：获取最新的视频关键帧，并将它之前的音视频tag全部去除，直接拼接到第一个音/视频tag后即可。同时为了形成流，而不是变成直接下载，需要使用到<a href="https://golang.org/pkg/net/http/#Flusher">Flush</a>。</p>
+<h4 id="flv处理">flv处理</h4>
+<p>完整代码见<a href="https://github.com/qydysky/bili_danmu/blob/0de0132ce1f09f73f78dbd94d90446e694855c28/Reply/flvDecode.go">flvDecode.go</a>，内含简单注释，下面进行解释。以下代码还处于开发中，可能有不合理处不要介意，仅介绍思路。</p>
+<p>首先打开文件：</p>
+<div class="highlight"><div style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">
+<table style="border-spacing:0;padding:0;margin:0;border:0;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
+<pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">1
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">2
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">3
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">4
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">5
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">6
+</span></code></pre></td>
+<td style="vertical-align:top;padding:0;margin:0;border:0;;width:100%">
+<pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-go" data-lang="go"><span style="display:flex;"><span><span style="color:#998;font-style:italic">//file
+</span></span></span><span style="display:flex;"><span><span style="color:#998;font-style:italic"></span>f,err <span style="color:#000;font-weight:bold">:=</span> os.<span style="color:#900;font-weight:bold">OpenFile</span>(path,os.O_RDONLY,<span style="color:#099">0644</span>)
+</span></span><span style="display:flex;"><span><span style="color:#000;font-weight:bold">if</span> err <span style="color:#000;font-weight:bold">!=</span> <span style="color:#000;font-weight:bold">nil</span> {
+</span></span><span style="display:flex;"><span>    <span style="color:#000;font-weight:bold">return</span> err
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span><span style="color:#000;font-weight:bold">defer</span> f.<span style="color:#900;font-weight:bold">Close</span>()
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>复制flv头及首个<code>前一个tag大小</code>，其中<code>streamChan</code>为一个<a href="https://draveness.me/golang/docs/part3-runtime/ch06-concurrency/golang-channel/">golang channel</a>，用于后续从中读取数据并发送到客户端。</p>
+<div class="highlight"><div style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">
+<table style="border-spacing:0;padding:0;margin:0;border:0;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
+<pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">1
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">2
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">3
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">4
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">5
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">6
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">7
+</span></code></pre></td>
+<td style="vertical-align:top;padding:0;margin:0;border:0;;width:100%">
+<pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-go" data-lang="go"><span style="display:flex;"><span><span style="color:#998;font-style:italic">//get flv header(9byte) + FirstTagSize(4byte)
+</span></span></span><span style="display:flex;"><span><span style="color:#998;font-style:italic"></span>{
+</span></span><span style="display:flex;"><span>    buf <span style="color:#000;font-weight:bold">:=</span> <span style="color:#0086b3">make</span>([]<span style="color:#458;font-weight:bold">byte</span>, flv_header_size<span style="color:#000;font-weight:bold">+</span>previou_tag_size)
+</span></span><span style="display:flex;"><span>    <span style="color:#000;font-weight:bold">if</span> _,err <span style="color:#000;font-weight:bold">:=</span> f.<span style="color:#900;font-weight:bold">Read</span>(buf);err <span style="color:#000;font-weight:bold">!=</span> <span style="color:#000;font-weight:bold">nil</span> {<span style="color:#000;font-weight:bold">return</span> err}
+</span></span><span style="display:flex;"><span>    <span style="color:#000;font-weight:bold">if</span> bytes.<span style="color:#900;font-weight:bold">Index</span>(buf,flv_header_sign) <span style="color:#000;font-weight:bold">!=</span> <span style="color:#099">0</span> {<span style="color:#000;font-weight:bold">return</span> errors.<span style="color:#900;font-weight:bold">New</span>(<span style="color:#d14">`no flv`</span>)}
+</span></span><span style="display:flex;"><span>    streamChan <span style="color:#000;font-weight:bold">&lt;-</span> buf
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>其中<code>flv_header_size=9</code>、<code>previou_tag_size=4</code>、<code>flv_header_sign=[]byte{0x46,0x4c,0x56}</code>是根据flv格式标准定义的值，分别表示flv头长度、前一tag长度、flv签名<code>FLV</code>。</p>
+<p>接着获取Script脚本tag、第一个视频tag、第一个音频tag。</p>
+<div class="highlight"><div style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">
+<table style="border-spacing:0;padding:0;margin:0;border:0;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
+<pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 1
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 2
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 3
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 4
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 5
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 6
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 7
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 8
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 9
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">10
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">11
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">12
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">13
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">14
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">15
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">16
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">17
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">18
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">19
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">20
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">21
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">22
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">23
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">24
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">25
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">26
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">27
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">28
+</span></code></pre></td>
+<td style="vertical-align:top;padding:0;margin:0;border:0;;width:100%">
+<pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-go" data-lang="go"><span style="display:flex;"><span><span style="color:#000;font-weight:bold">for</span> {
+</span></span><span style="display:flex;"><span>    t <span style="color:#000;font-weight:bold">:=</span> <span style="color:#900;font-weight:bold">getTag</span>(f)
+</span></span><span style="display:flex;"><span>    <span style="color:#000;font-weight:bold">if</span> t.Tag <span style="color:#000;font-weight:bold">==</span> script_tag {
+</span></span><span style="display:flex;"><span>        streamChan <span style="color:#000;font-weight:bold">&lt;-</span> <span style="color:#000;font-weight:bold">*</span>t.Buf
+</span></span><span style="display:flex;"><span>    } <span style="color:#000;font-weight:bold">else</span> <span style="color:#000;font-weight:bold">if</span> t.Tag <span style="color:#000;font-weight:bold">==</span> video_tag {
+</span></span><span style="display:flex;"><span>        <span style="color:#000;font-weight:bold">if</span> !first_video_tag {
+</span></span><span style="display:flex;"><span>            first_video_tag = <span style="color:#000;font-weight:bold">true</span>
+</span></span><span style="display:flex;"><span>            streamChan <span style="color:#000;font-weight:bold">&lt;-</span> <span style="color:#000;font-weight:bold">*</span>t.Buf
+</span></span><span style="display:flex;"><span>        }
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>        <span style="color:#000;font-weight:bold">if</span> t.FirstByte <span style="color:#000;font-weight:bold">&amp;</span> <span style="color:#099">0xf0</span> <span style="color:#000;font-weight:bold">==</span> <span style="color:#099">0x10</span> {
+</span></span><span style="display:flex;"><span>            <span style="color:#000;font-weight:bold">if</span> <span style="color:#0086b3">len</span>(last_keyframe_video_offsets) &gt; <span style="color:#099">2</span> {
+</span></span><span style="display:flex;"><span>                <span style="color:#998;font-style:italic">// last_timestamps = append(last_timestamps[1:], t.Timestamp)
+</span></span></span><span style="display:flex;"><span><span style="color:#998;font-style:italic"></span>                last_keyframe_video_offsets = <span style="color:#0086b3">append</span>(last_keyframe_video_offsets[<span style="color:#099">1</span>:], t.Offset)
+</span></span><span style="display:flex;"><span>            } <span style="color:#000;font-weight:bold">else</span> {
+</span></span><span style="display:flex;"><span>                <span style="color:#998;font-style:italic">// last_timestamps = append(last_timestamps, t.Timestamp)
+</span></span></span><span style="display:flex;"><span><span style="color:#998;font-style:italic"></span>                last_keyframe_video_offsets = <span style="color:#0086b3">append</span>(last_keyframe_video_offsets, t.Offset)
+</span></span><span style="display:flex;"><span>            }
+</span></span><span style="display:flex;"><span>        }
+</span></span><span style="display:flex;"><span>    } <span style="color:#000;font-weight:bold">else</span> <span style="color:#000;font-weight:bold">if</span> t.Tag <span style="color:#000;font-weight:bold">==</span> audio_tag {
+</span></span><span style="display:flex;"><span>        <span style="color:#000;font-weight:bold">if</span> !first_audio_tag {
+</span></span><span style="display:flex;"><span>            first_audio_tag = <span style="color:#000;font-weight:bold">true</span>
+</span></span><span style="display:flex;"><span>            streamChan <span style="color:#000;font-weight:bold">&lt;-</span> <span style="color:#000;font-weight:bold">*</span>t.Buf
+</span></span><span style="display:flex;"><span>        }
+</span></span><span style="display:flex;"><span>    } <span style="color:#000;font-weight:bold">else</span> {<span style="color:#998;font-style:italic">//eof_tag 
+</span></span></span><span style="display:flex;"><span><span style="color:#998;font-style:italic"></span>        <span style="color:#000;font-weight:bold">break</span>;
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>其中</p>
+<p><code>script_tag=0x12</code>、<code>video_tag=0x09</code>、<code>audio_tag=0x08</code>为三种tag的flv定义的字节串。</p>
+<p><code>first_video_tag</code>、<code>first_audio_tag</code>为局部bool变量，获取到第一个视频、音频tag后设为<code>true</code>。不再将后续视频，音频tag发送给客户。</p>
+<p><code>last_keyframe_video_offsets</code>为局部int64数组，用来储存最后几个关键帧的位置。int64是由<a href="https://golang.org/pkg/os/#File.Seek">f.Seek</a>返回的位置是int64类型决定的。</p>
+<p><code>t.FirstByte &amp; 0xf0 == 0x10</code>中<code>t.FirstByte</code>是视频头，通过位相与，为真时即为关键帧。</p>
+<p>这里使用了<code>getTag</code>方法：</p>
+<div class="highlight"><div style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">
+<table style="border-spacing:0;padding:0;margin:0;border:0;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
+<pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 1
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 2
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 3
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 4
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 5
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 6
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 7
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 8
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 9
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">10
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">11
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">12
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">13
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">14
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">15
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">16
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">17
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">18
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">19
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">20
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">21
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">22
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">23
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">24
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">25
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">26
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">27
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">28
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">29
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">30
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">31
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">32
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">33
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">34
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">35
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">36
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">37
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">38
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">39
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">40
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">41
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">42
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">43
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">44
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">45
+</span></code></pre></td>
+<td style="vertical-align:top;padding:0;margin:0;border:0;;width:100%">
+<pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-go" data-lang="go"><span style="display:flex;"><span><span style="color:#000;font-weight:bold">type</span> flv_tag <span style="color:#000;font-weight:bold">struct</span> {
+</span></span><span style="display:flex;"><span>    Tag <span style="color:#458;font-weight:bold">byte</span>
+</span></span><span style="display:flex;"><span>    Offset <span style="color:#458;font-weight:bold">int64</span>
+</span></span><span style="display:flex;"><span>    Timestamp <span style="color:#458;font-weight:bold">int32</span>
+</span></span><span style="display:flex;"><span>    PreSize <span style="color:#458;font-weight:bold">int32</span>
+</span></span><span style="display:flex;"><span>    FirstByte <span style="color:#458;font-weight:bold">byte</span>
+</span></span><span style="display:flex;"><span>    Buf <span style="color:#000;font-weight:bold">*</span>[]<span style="color:#458;font-weight:bold">byte</span>
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#998;font-style:italic">//get tag func
+</span></span></span><span style="display:flex;"><span><span style="color:#998;font-style:italic"></span><span style="color:#000;font-weight:bold">var</span> getTag = <span style="color:#000;font-weight:bold">func</span>(f <span style="color:#000;font-weight:bold">*</span>os.File)(t flv_tag){
+</span></span><span style="display:flex;"><span>    t.Offset,_ = f.<span style="color:#900;font-weight:bold">Seek</span>(<span style="color:#099">0</span>,<span style="color:#099">1</span>)<span style="color:#998;font-style:italic">//获取当前tag位置
+</span></span></span><span style="display:flex;"><span><span style="color:#998;font-style:italic"></span>    Buf <span style="color:#000;font-weight:bold">:=</span> []<span style="color:#458;font-weight:bold">byte</span>{}
+</span></span><span style="display:flex;"><span>    t.Buf = <span style="color:#000;font-weight:bold">&amp;</span>Buf<span style="color:#998;font-style:italic">//返回指针避免再次分配内存
+</span></span></span><span style="display:flex;"><span><span style="color:#998;font-style:italic"></span>
+</span></span><span style="display:flex;"><span>    buf <span style="color:#000;font-weight:bold">:=</span> <span style="color:#0086b3">make</span>([]<span style="color:#458;font-weight:bold">byte</span>, tag_header_size)<span style="color:#998;font-style:italic">//读取tag头
+</span></span></span><span style="display:flex;"><span><span style="color:#998;font-style:italic"></span>    <span style="color:#000;font-weight:bold">if</span> size,err <span style="color:#000;font-weight:bold">:=</span> f.<span style="color:#900;font-weight:bold">Read</span>(buf);err <span style="color:#000;font-weight:bold">!=</span> <span style="color:#000;font-weight:bold">nil</span> <span style="color:#000;font-weight:bold">||</span> size <span style="color:#000;font-weight:bold">==</span> <span style="color:#099">0</span> {
+</span></span><span style="display:flex;"><span>        t.Tag = eof_tag<span style="color:#998;font-style:italic">//eof_tag为读取到结尾的标志，或许当前tag还没下载完成
+</span></span></span><span style="display:flex;"><span><span style="color:#998;font-style:italic"></span>        <span style="color:#000;font-weight:bold">return</span>
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>    Buf = <span style="color:#0086b3">append</span>(Buf, buf<span style="color:#000;font-weight:bold">...</span>)<span style="color:#998;font-style:italic">//将tag头储存到buf中，准备返回
+</span></span></span><span style="display:flex;"><span><span style="color:#998;font-style:italic"></span>    t.Tag = buf[<span style="color:#099">0</span>]<span style="color:#998;font-style:italic">//获取当前tag类型
+</span></span></span><span style="display:flex;"><span><span style="color:#998;font-style:italic"></span>    t.Timestamp = F.<span style="color:#900;font-weight:bold">Btoi32</span>([]<span style="color:#458;font-weight:bold">byte</span>{buf[<span style="color:#099">7</span>],buf[<span style="color:#099">4</span>],buf[<span style="color:#099">5</span>],buf[<span style="color:#099">6</span>]},<span style="color:#099">0</span>)<span style="color:#998;font-style:italic">//获取当前tag时间戳，Btoi32为4为字节转int32
+</span></span></span><span style="display:flex;"><span><span style="color:#998;font-style:italic"></span>
+</span></span><span style="display:flex;"><span>    size <span style="color:#000;font-weight:bold">:=</span> F.<span style="color:#900;font-weight:bold">Btoi32</span>(<span style="color:#0086b3">append</span>([]<span style="color:#458;font-weight:bold">byte</span>{<span style="color:#099">0x00</span>},buf[<span style="color:#099">1</span>:<span style="color:#099">4</span>]<span style="color:#000;font-weight:bold">...</span>),<span style="color:#099">0</span>)<span style="color:#998;font-style:italic">//获取tag内容长度
+</span></span></span><span style="display:flex;"><span><span style="color:#998;font-style:italic"></span>
+</span></span><span style="display:flex;"><span>    data <span style="color:#000;font-weight:bold">:=</span> <span style="color:#0086b3">make</span>([]<span style="color:#458;font-weight:bold">byte</span>, size)
+</span></span><span style="display:flex;"><span>    <span style="color:#000;font-weight:bold">if</span> size,err <span style="color:#000;font-weight:bold">:=</span> f.<span style="color:#900;font-weight:bold">Read</span>(data);err <span style="color:#000;font-weight:bold">!=</span> <span style="color:#000;font-weight:bold">nil</span> <span style="color:#000;font-weight:bold">||</span> size <span style="color:#000;font-weight:bold">==</span> <span style="color:#099">0</span> {
+</span></span><span style="display:flex;"><span>        t.Tag = eof_tag
+</span></span><span style="display:flex;"><span>        <span style="color:#000;font-weight:bold">return</span>
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>    t.FirstByte = data[<span style="color:#099">0</span>]<span style="color:#998;font-style:italic">//获取当前内容的第一个字节，视频头/音频头
+</span></span></span><span style="display:flex;"><span><span style="color:#998;font-style:italic"></span>
+</span></span><span style="display:flex;"><span>    pre_tag <span style="color:#000;font-weight:bold">:=</span> <span style="color:#0086b3">make</span>([]<span style="color:#458;font-weight:bold">byte</span>, previou_tag_size)<span style="color:#998;font-style:italic">//前一tag长度
+</span></span></span><span style="display:flex;"><span><span style="color:#998;font-style:italic"></span>    <span style="color:#000;font-weight:bold">if</span> size,err <span style="color:#000;font-weight:bold">:=</span> f.<span style="color:#900;font-weight:bold">Read</span>(pre_tag);err <span style="color:#000;font-weight:bold">!=</span> <span style="color:#000;font-weight:bold">nil</span> <span style="color:#000;font-weight:bold">||</span> size <span style="color:#000;font-weight:bold">==</span> <span style="color:#099">0</span> {
+</span></span><span style="display:flex;"><span>        t.Tag = eof_tag
+</span></span><span style="display:flex;"><span>        <span style="color:#000;font-weight:bold">return</span>
+</span></span><span style="display:flex;"><span>    } 
+</span></span><span style="display:flex;"><span>    t.PreSize = F.<span style="color:#900;font-weight:bold">Btoi32</span>(pre_tag,<span style="color:#099">0</span>)<span style="color:#998;font-style:italic">//前一tag长度
+</span></span></span><span style="display:flex;"><span><span style="color:#998;font-style:italic"></span>    
+</span></span><span style="display:flex;"><span>    Buf = <span style="color:#0086b3">append</span>(Buf, <span style="color:#0086b3">append</span>(data, pre_tag<span style="color:#000;font-weight:bold">...</span>)<span style="color:#000;font-weight:bold">...</span>)
+</span></span><span style="display:flex;"><span>    <span style="color:#998;font-style:italic">// if t.PreSize == 0{fmt.Println(t.Tag,size,data[size:])}
+</span></span></span><span style="display:flex;"><span><span style="color:#998;font-style:italic"></span>
+</span></span><span style="display:flex;"><span>    <span style="color:#000;font-weight:bold">return</span>
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>将当前位置定位到最后几个关键帧</p>
+<div class="highlight"><div style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">
+<table style="border-spacing:0;padding:0;margin:0;border:0;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
+<pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">1
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">2
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">3
+</span></code></pre></td>
+<td style="vertical-align:top;padding:0;margin:0;border:0;;width:100%">
+<pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-go" data-lang="go"><span style="display:flex;"><span><span style="color:#998;font-style:italic">//seed to the second last tag
+</span></span></span><span style="display:flex;"><span><span style="color:#998;font-style:italic"></span><span style="color:#000;font-weight:bold">if</span> <span style="color:#0086b3">len</span>(last_keyframe_video_offsets) <span style="color:#000;font-weight:bold">==</span> <span style="color:#099">0</span> {flvlog.<span style="color:#900;font-weight:bold">L</span>(<span style="color:#d14">`W: `</span>,<span style="color:#d14">`no keyframe`</span>);<span style="color:#000;font-weight:bold">return</span> errors.<span style="color:#900;font-weight:bold">New</span>(<span style="color:#d14">`no keyframe`</span>)}
+</span></span><span style="display:flex;"><span>f.<span style="color:#900;font-weight:bold">Seek</span>(last_keyframe_video_offsets[<span style="color:#099">0</span>],<span style="color:#099">0</span>)
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>下面进行对tag逐个进行复制</p>
+<div class="highlight"><div style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">
+<table style="border-spacing:0;padding:0;margin:0;border:0;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
+<pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 1
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 2
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 3
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 4
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 5
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 6
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 7
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 8
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 9
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">10
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">11
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">12
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">13
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">14
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">15
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">16
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">17
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">18
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">19
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">20
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">21
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">22
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">23
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">24
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">25
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">26
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">27
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">28
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">29
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">30
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">31
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">32
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">33
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">34
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">35
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">36
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">37
+</span></code></pre></td>
+<td style="vertical-align:top;padding:0;margin:0;border:0;;width:100%">
+<pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-go" data-lang="go"><span style="display:flex;"><span><span style="color:#998;font-style:italic">//copy
+</span></span></span><span style="display:flex;"><span><span style="color:#998;font-style:italic"></span>{
+</span></span><span style="display:flex;"><span>    last_available_offset <span style="color:#000;font-weight:bold">:=</span> last_keyframe_video_offsets[<span style="color:#099">0</span>]<span style="color:#998;font-style:italic">//最后一个可用tag，万一发生错误，将回溯到此位置
+</span></span></span><span style="display:flex;"><span><span style="color:#998;font-style:italic"></span>
+</span></span><span style="display:flex;"><span>    <span style="color:#998;font-style:italic">// last_Timestamp := last_timestamps[0]
+</span></span></span><span style="display:flex;"><span><span style="color:#998;font-style:italic"></span>    <span style="color:#000;font-weight:bold">for</span> {
+</span></span><span style="display:flex;"><span>        <span style="color:#998;font-style:italic">//退出
+</span></span></span><span style="display:flex;"><span><span style="color:#998;font-style:italic"></span>        <span style="color:#000;font-weight:bold">select</span> {
+</span></span><span style="display:flex;"><span>        <span style="color:#000;font-weight:bold">case</span> <span style="color:#000;font-weight:bold">&lt;-</span>cancel:<span style="color:#000;font-weight:bold">return</span> <span style="color:#000;font-weight:bold">nil</span>;<span style="color:#998;font-style:italic">//客户退出了
+</span></span></span><span style="display:flex;"><span><span style="color:#998;font-style:italic"></span>        <span style="color:#000;font-weight:bold">default</span>:;
+</span></span><span style="display:flex;"><span>        }
+</span></span><span style="display:flex;"><span>        t <span style="color:#000;font-weight:bold">:=</span> <span style="color:#900;font-weight:bold">getTag</span>(f)<span style="color:#998;font-style:italic">//逐个获取tag
+</span></span></span><span style="display:flex;"><span><span style="color:#998;font-style:italic"></span>        <span style="color:#000;font-weight:bold">if</span> t.Tag <span style="color:#000;font-weight:bold">==</span> eof_tag {<span style="color:#998;font-style:italic">//获取到了个残缺tag
+</span></span></span><span style="display:flex;"><span><span style="color:#998;font-style:italic"></span>            f.<span style="color:#900;font-weight:bold">Seek</span>(last_available_offset,<span style="color:#099">0</span>)
+</span></span><span style="display:flex;"><span>            time.<span style="color:#900;font-weight:bold">Sleep</span>(time.Second)
+</span></span><span style="display:flex;"><span>            <span style="color:#000;font-weight:bold">continue</span>
+</span></span><span style="display:flex;"><span>        } <span style="color:#000;font-weight:bold">else</span> <span style="color:#000;font-weight:bold">if</span> t.PreSize <span style="color:#000;font-weight:bold">==</span> <span style="color:#099">0</span> {<span style="color:#998;font-style:italic">//这是个无效的tag，或许读取发生了错误
+</span></span></span><span style="display:flex;"><span><span style="color:#998;font-style:italic"></span>            f.<span style="color:#900;font-weight:bold">Seek</span>(last_available_offset,<span style="color:#099">0</span>)
+</span></span><span style="display:flex;"><span>            f.<span style="color:#900;font-weight:bold">Seek</span>(<span style="color:#900;font-weight:bold">seachtag</span>(f),<span style="color:#099">1</span>)<span style="color:#998;font-style:italic">//seachtag返回可用tag位置
+</span></span></span><span style="display:flex;"><span><span style="color:#998;font-style:italic"></span>            <span style="color:#000;font-weight:bold">continue</span>
+</span></span><span style="display:flex;"><span>        } <span style="color:#000;font-weight:bold">else</span> <span style="color:#000;font-weight:bold">if</span> t.Tag <span style="color:#000;font-weight:bold">==</span> video_tag {
+</span></span><span style="display:flex;"><span>            <span style="color:#998;font-style:italic">// if t.FirstByte &amp; 0xf0 == 0x10 {
+</span></span></span><span style="display:flex;"><span><span style="color:#998;font-style:italic"></span>            <span style="color:#998;font-style:italic">// 	video_keyframe_speed = t.Timestamp - last_video_keyframe_timestramp
+</span></span></span><span style="display:flex;"><span><span style="color:#998;font-style:italic"></span>            <span style="color:#998;font-style:italic">// 	fmt.Println(`video_keyframe_speed`,video_keyframe_speed)
+</span></span></span><span style="display:flex;"><span><span style="color:#998;font-style:italic"></span>            <span style="color:#998;font-style:italic">// 	last_video_keyframe_timestramp = t.Timestamp
+</span></span></span><span style="display:flex;"><span><span style="color:#998;font-style:italic"></span>            <span style="color:#998;font-style:italic">// }
+</span></span></span><span style="display:flex;"><span><span style="color:#998;font-style:italic"></span>            streamChan <span style="color:#000;font-weight:bold">&lt;-</span> <span style="color:#000;font-weight:bold">*</span>t.Buf
+</span></span><span style="display:flex;"><span>        } <span style="color:#000;font-weight:bold">else</span> <span style="color:#000;font-weight:bold">if</span> t.Tag <span style="color:#000;font-weight:bold">==</span> audio_tag {
+</span></span><span style="display:flex;"><span>            streamChan <span style="color:#000;font-weight:bold">&lt;-</span> <span style="color:#000;font-weight:bold">*</span>t.Buf
+</span></span><span style="display:flex;"><span>        } <span style="color:#000;font-weight:bold">else</span> <span style="color:#000;font-weight:bold">if</span> t.Tag <span style="color:#000;font-weight:bold">!=</span> script_tag {<span style="color:#998;font-style:italic">//不复制Script脚本tag
+</span></span></span><span style="display:flex;"><span><span style="color:#998;font-style:italic"></span>            ;
+</span></span><span style="display:flex;"><span>        }
+</span></span><span style="display:flex;"><span>        
+</span></span><span style="display:flex;"><span>        last_available_offset = t.Offset<span style="color:#998;font-style:italic">//刷新最后可用tag
+</span></span></span><span style="display:flex;"><span><span style="color:#998;font-style:italic"></span>
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></td></tr></table>
+</div>
+</div><h4 id="http部分">http部分</h4>
+<p>完整代码见<a href="https://github.com/qydysky/bili_danmu/blob/0de0132ce1f09f73f78dbd94d90446e694855c28/Reply/F.go#L950">Reply/F.go</a>,其中的核心部分：</p>
+<div class="highlight"><div style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">
+<table style="border-spacing:0;padding:0;margin:0;border:0;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
+<pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 1
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 2
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 3
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 4
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 5
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 6
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 7
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 8
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 9
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">10
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">11
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">12
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">13
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">14
+</span></code></pre></td>
+<td style="vertical-align:top;padding:0;margin:0;border:0;;width:100%">
+<pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-go" data-lang="go"><span style="display:flex;"><span>flusher, flushSupport <span style="color:#000;font-weight:bold">:=</span> w.(http.Flusher);
+</span></span><span style="display:flex;"><span><span style="color:#000;font-weight:bold">if</span> flushSupport {flusher.<span style="color:#900;font-weight:bold">Flush</span>()}<span style="color:#998;font-style:italic">//先进行这步，否则将可能会变成直接下载
+</span></span></span><span style="display:flex;"><span><span style="color:#998;font-style:italic"></span>
+</span></span><span style="display:flex;"><span><span style="color:#000;font-weight:bold">var</span> (
+</span></span><span style="display:flex;"><span>    err <span style="color:#458;font-weight:bold">error</span>
+</span></span><span style="display:flex;"><span>)
+</span></span><span style="display:flex;"><span><span style="color:#000;font-weight:bold">for</span> err <span style="color:#000;font-weight:bold">==</span> <span style="color:#000;font-weight:bold">nil</span> {
+</span></span><span style="display:flex;"><span>    <span style="color:#000;font-weight:bold">if</span> b <span style="color:#000;font-weight:bold">:=</span> <span style="color:#000;font-weight:bold">&lt;-</span> byteC;<span style="color:#0086b3">len</span>(b) <span style="color:#000;font-weight:bold">!=</span> <span style="color:#099">0</span> {
+</span></span><span style="display:flex;"><span>        _,err = w.<span style="color:#900;font-weight:bold">Write</span>(b)
+</span></span><span style="display:flex;"><span>    } <span style="color:#000;font-weight:bold">else</span> {
+</span></span><span style="display:flex;"><span>        <span style="color:#000;font-weight:bold">break</span>
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>    <span style="color:#000;font-weight:bold">if</span> flushSupport {flusher.<span style="color:#900;font-weight:bold">Flush</span>()}
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></td></tr></table>
+</div>
+</div>
+        </div>
+
+        
+<div class="post-archive">
+    <ul class="post-copyright">
+        <li><strong>原文作者：</strong><a rel="author" href="/">qydysky</a></li>
+        <li style="word-break:break-all"><strong>原文链接：</strong><a href="/post/20210416flv-golang/">/post/20210416flv-golang/</a></li>
+        <li><strong>版权声明：</strong>本作品采用<a rel="license" href="https://creativecommons.org/licenses/by-nc-nd/4.0/">知识共享署名-非商业性使用-禁止演绎 4.0 国际许可协议</a>进行许可，非商业转载请注明出处（作者，原文链接），商业转载请联系作者获得授权。</li>
+    </ul>
+</div>
+<br/>
+
+
+
+        
+
+<div class="post-archive">
+    <h2 class="related-title">更多</h2>
+    <ul class="listing">
+        
+        <li><a href="/post/20210406aria2/">aria2缓冲区</a></li>
+        
+        <li><a href="/post/20210402debain/">Debian音量控制</a></li>
+        
+        <li><a href="/post/20210331caddy/">Caddy的配置与运行</a></li>
+        
+        <li><a href="/post/20210331hexo/">hexo安装、配置及博客生成全流程</a></li>
+        
+        <li><a href="/about/">关于</a></li>
+        
+    </ul>
+</div>
+
+
+    </article>
+    
+    
+
+    
+    
+</div>
+
+                    <footer id="footer">
+    <div>
+        &copy; 2024 <a href="/">qydysky&#39;s blog By qydysky</a>
+        
+    </div>
+    <br />
+    <div>
+        <a href="https://icp.gov.moe/?keyword=20240909" target="_blank">萌ICP备20240909号</a>
+    </div>
+    <br />
+    <div>
+        <div class="github-badge">
+            <a href="https://gohugo.io/" target="_black" rel="nofollow"><span class="badge-subject">Powered by</span><span class="badge-value bg-blue">Hugo</span></a>
+        </div>
+        <div class="github-badge">
+            <a href="https://github.com/flysnow-org/maupassant-hugo" target="_black"><span class="badge-subject">Theme</span><span class="badge-value bg-yellowgreen">Maupassant</span></a>
+        </div>
+    </div>
+</footer>
+
+
+    
+    <script type="text/javascript">
+        window.MathJax = {
+            tex2jax: {
+                inlineMath: [['$', '$']],
+                processEscapes: true
+                }
+            };
+    </script>
+    <script src='/js/mathjax/2.7.5/MathJax.js?config=TeX-MML-AM_CHTML' async></script>
+
+<a id="rocket" href="#top"></a>
+<script type="text/javascript" src='/js/totop.js?v=0.0.0' async=""></script>
+
+
+
+
+
+
+                </div>
+
+                <div id="secondary">
+    <section class="widget">
+        <form id="search" action='/search/' method="get" accept-charset="utf-8" target="_blank" _lpchecked="1">
+      
+      <input type="text" name="q" maxlength="20" placeholder="Search">
+      <input type="hidden" name="sitesearch" value="/">
+      <button type="submit" class="submit icon-search"></button>
+</form>
+    </section>
+    
+    
+
+    <section class="widget">
+        <h3 class="widget-title"><a href='/tags/'>标签</a></h3>
+<div class="tagcloud">
+    
+    <a href="/tags/Caddy/">Caddy</a>
+    
+    <a href="/tags/amixer/">amixer</a>
+    
+    <a href="/tags/ap/">ap</a>
+    
+    <a href="/tags/aria2/">aria2</a>
+    
+    <a href="/tags/c/">c</a>
+    
+    <a href="/tags/canvas/">canvas</a>
+    
+    <a href="/tags/certbot/">certbot</a>
+    
+    <a href="/tags/crontab/">crontab</a>
+    
+    <a href="/tags/docker/">docker</a>
+    
+    <a href="/tags/ffmpeg/">ffmpeg</a>
+    
+    <a href="/tags/flv/">flv</a>
+    
+    <a href="/tags/fmp4/">fmp4</a>
+    
+    <a href="/tags/frp/">frp</a>
+    
+    <a href="/tags/gateway/">gateway</a>
+    
+    <a href="/tags/golang/">golang</a>
+    
+    <a href="/tags/hexo/">hexo</a>
+    
+    <a href="/tags/javascript/">javascript</a>
+    
+    <a href="/tags/kde/">kde</a>
+    
+    <a href="/tags/kioexec/">kioexec</a>
+    
+    <a href="/tags/l4d2/">l4d2</a>
+    
+    <a href="/tags/legado/">legado</a>
+    
+    <a href="/tags/letsencrypt/">letsencrypt</a>
+    
+    <a href="/tags/linux/">linux</a>
+    
+    <a href="/tags/mock/">mock</a>
+    
+    <a href="/tags/mp4/">mp4</a>
+    
+    <a href="/tags/mysql/">mysql</a>
+    
+    <a href="/tags/ncurses/">ncurses</a>
+    
+    <a href="/tags/nodejs/">nodejs</a>
+    
+    <a href="/tags/nvm/">nvm</a>
+    
+    <a href="/tags/oracle/">oracle</a>
+    
+    <a href="/tags/plugin/">plugin</a>
+    
+    <a href="/tags/pocketbase/">pocketbase</a>
+    
+    <a href="/tags/regExp/">regExp</a>
+    
+    <a href="/tags/sh/">sh</a>
+    
+    <a href="/tags/shell/">shell</a>
+    
+    <a href="/tags/snap/">snap</a>
+    
+    <a href="/tags/sourcemod/">sourcemod</a>
+    
+    <a href="/tags/spring/">spring</a>
+    
+    <a href="/tags/truenas/">truenas</a>
+    
+    <a href="/tags/url/">url</a>
+    
+    <a href="/tags/vs/">vs</a>
+    
+    <a href="/tags/vue-element-admin/">vue-element-admin</a>
+    
+    <a href="/tags/wifi7/">wifi7</a>
+    
+    <a href="/tags/xiaomi/">xiaomi</a>
+    
+    <a href="/tags/%E6%97%A5%E5%B8%B8/">日常</a>
+    
+</div>
+    </section>
+
+    
+<section class="widget">
+    <h3 class="widget-title">友情链接</h3>
+    <ul class="widget-list">
+        
+        <li>
+            <a target="_blank" href="https://vcb-s.com/" title="VCB-Studio">VCB-Studio</a>
+        </li>
+        
+    </ul>
+</section>
+
+
+    <section class="widget">
+        <h3 class="widget-title">其它</h3>
+        <ul class="widget-list">
+            <li><a href="/index.xml">文章 RSS</a></li>
+        </ul>
+    </section>
+
+    <style type="text/css">
+    .post-toc {
+        max-width: 100%;
+        max-height: 80%;
+        font-family: Athelas, STHeiti, Microsoft Yahei, serif;
+        font-size: 12px;
+        word-wrap: break-word;
+        white-space: nowrap;
+        z-index: 999;
+        cursor: pointer;
+    }
+
+    .post-toc .post-toc-title {
+        color: #6E7173;
+        line-height: 2.7;
+        margin-top: 0;
+        font-size: 16px;
+        border-bottom: 1px solid #ddd;
+        display: block;
+    }
+
+    .post-toc .post-toc-content {
+        font-size: 15px;
+    }
+
+    .post-toc .post-toc-content>nav>ul {
+        margin: 10px 0;
+        margin-block: 0.5rem;
+        padding-inline: 0.1rem;
+    }
+
+    .post-toc .post-toc-content ul {
+        list-style: none;
+        line-height: 1.8em;
+    }
+
+    .post-toc .post-toc-content ul ul {
+        padding-left: 15px;
+        font-size: 0.8rem;
+    }
+
+    @media print,
+    screen and (max-width:1057px) {
+        .post-toc {
+            display: none;
+        }
+    }
+</style>
+<div class="post-toc">
+    <h2 class="post-toc-title">目录</h2>
+    <div class="post-toc-content">
+        <nav id="TableOfContents">
+  <ul>
+    <li>
+      <ul>
+        <li>
+          <ul>
+            <li><a href="#简介">简介</a></li>
+            <li><a href="#flv文件结构">flv文件结构</a>
+              <ul>
+                <li><a href="#flv">flv</a></li>
+                <li><a href="#flv头">flv头</a></li>
+                <li><a href="#flv内容">flv内容</a></li>
+                <li><a href="#tag内容">tag内容</a>
+                  <ul>
+                    <li><a href="#视频tag">视频tag</a></li>
+                    <li><a href="#音频tag">音频tag</a></li>
+                  </ul>
+                </li>
+              </ul>
+            </li>
+            <li><a href="#golang转flv直播流">golang转flv直播流</a>
+              <ul>
+                <li><a href="#flv处理">flv处理</a></li>
+                <li><a href="#http部分">http部分</a></li>
+              </ul>
+            </li>
+          </ul>
+        </li>
+      </ul>
+    </li>
+  </ul>
+</nav>
+    </div>
+</div>
+<script type="text/javascript">
+    $(document).ready(function () {
+        var postToc = $(".post-toc");
+        if (postToc.length) {
+
+            var t = postToc.offset().top - 20,
+                a = {
+                    start: {
+                        position: "unset",
+                        top: "unset",
+                        overflow: "unset",
+                        paddingRight: "unset"
+                    },
+                    process: {
+                        position: "fixed",
+                        top: 20,
+                        overflow: "hidden auto",
+                        paddingRight: "5em"
+                    },
+                };
+
+            var e = $(window).scrollTop();
+            e < t ? postToc.css(a.start) : postToc.css(a.process)
+
+            $(window).scroll(function () {
+                var e = $(window).scrollTop();
+                e < t ? postToc.css(a.start) : postToc.css(a.process)
+            })
+        }
+    })
+</script>
+    
+</div>
+            </div>
+        </div>
+    </div>
+</body>
+
+</html>

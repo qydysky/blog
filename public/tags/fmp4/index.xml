@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>fmp4 on qydysky&#39;s blog</title>
+    <link>/tags/fmp4/</link>
+    <description>Recent content in fmp4 on qydysky&#39;s blog</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>zh-CN</language>
+    <lastBuildDate>Tue, 25 Oct 2022 11:06:00 +0800</lastBuildDate><atom:link href="/tags/fmp4/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>fmp4、mp4结构解析</title>
+      <link>/post/20221025fmp4/</link>
+      <pubDate>Tue, 25 Oct 2022 11:06:00 +0800</pubDate>
+      
+      <guid>/post/20221025fmp4/</guid>
+      <description>本文记录了fmp4、mp4结构</description>
+    </item>
+    
+  </channel>
+</rss>

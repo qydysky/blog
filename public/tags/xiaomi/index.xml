@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>xiaomi on qydysky&#39;s blog</title>
+    <link>/tags/xiaomi/</link>
+    <description>Recent content in xiaomi on qydysky&#39;s blog</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>zh-CN</language>
+    <lastBuildDate>Sun, 03 Mar 2024 16:20:10 +0800</lastBuildDate><atom:link href="/tags/xiaomi/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>小米ap BE3600 wifi7使用体验</title>
+      <link>/post/20240303be3600/</link>
+      <pubDate>Sun, 03 Mar 2024 16:20:10 +0800</pubDate>
+      
+      <guid>/post/20240303be3600/</guid>
+      <description>本文记录了小米BE3600 wifi7使用体验。</description>
+    </item>
+    
+  </channel>
+</rss>

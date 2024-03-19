@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>flv on qydysky&#39;s blog</title>
+    <link>/tags/flv/</link>
+    <description>Recent content in flv on qydysky&#39;s blog</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>zh-CN</language>
+    <lastBuildDate>Fri, 16 Apr 2021 00:00:00 +0000</lastBuildDate><atom:link href="/tags/flv/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>flv文件解析及golang的流实现</title>
+      <link>/post/20210416flv-golang/</link>
+      <pubDate>Fri, 16 Apr 2021 00:00:00 +0000</pubDate>
+      
+      <guid>/post/20210416flv-golang/</guid>
+      <description>最近在使用bilibili直播姬的时候，想在局域网同时观看保存下来的直播流，本文记录实现的全过程。</description>
+    </item>
+    
+  </channel>
+</rss>
