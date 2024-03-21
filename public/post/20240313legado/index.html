@@ -215,7 +215,7 @@ $.field：书Collections field字段，因为多个图片文件，所以用\n分
 </span></span><span style="display:flex;"><span>    <span style="color:#000080">&#34;intro&#34;</span>: <span style="color:#d14">&#34;$.info&#34;</span>,
 </span></span><span style="display:flex;"><span>    <span style="color:#000080">&#34;kind&#34;</span>: <span style="color:#d14">&#34;$.field&#34;</span>,
 </span></span><span style="display:flex;"><span>    <span style="color:#000080">&#34;name&#34;</span>: <span style="color:#d14">&#34;$.name&#34;</span>,
-</span></span><span style="display:flex;"><span>    <span style="color:#000080">&#34;tocUrl&#34;</span>: <span style="color:#d14">&#34;/api/collections/{$.ref}/records?sort=pn&#34;</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#000080">&#34;tocUrl&#34;</span>: <span style="color:#d14">&#34;/api/collections/{$.ref}/records?sort=pn&amp;perPage=10000&#34;</span>
 </span></span><span style="display:flex;"><span>  },
 </span></span><span style="display:flex;"><span>  <span style="color:#000080">&#34;ruleContent&#34;</span>: {
 </span></span><span style="display:flex;"><span>    <span style="color:#000080">&#34;content&#34;</span>: <span style="color:#d14">&#34;$.field@js:result.split(\&#34;\\n\&#34;).sort().map(x=&gt;&#39;&lt;img src=\\\&#34;/api/files/{{$.collectionId}}/{{$.id}}/&#39;+x+&#39;\\\&#34;&gt;&#39;).join(\&#34;\&#34;)&#34;</span>,
