@@ -416,7 +416,11 @@ iface bond0 inet dhcp
 </span></span></span></code></pre></td></tr></table>
 </div>
 </div><p>点击创建</p>
-<ol start="2">
+<p>删除：
+界面删除后，执行</p>
+<pre tabindex="0"><code>kubectl get pv
+kubectl delete pv {pv名称}
+</code></pre><ol start="2">
 <li>设置代理</li>
 </ol>
 <p>执行<code>mkdir -p /etc/systemd/system/containerd.service.d/</code></p>
@@ -428,9 +432,9 @@ Environment=&#34;HTTPS_PROXY=http://192.168.31.1:10807&#34;
 Environment=&#34;NO_PROXY=localhost,127.0.0.0/8,::1,172.17.0.0/16,10.0.0.0/8,192.0.0.0/8,.cluster.local&#34;
 </code></pre><p>执行<code>systemctl restart k3s.service</code></p>
 <ol start="3">
-<li>部署nginx
-进入Application</li>
+<li>部署nginx</li>
 </ol>
+<p>进入Application</p>
 <p>点击Add with from</p>
 <p>Name、Image填写<code>nginx</code></p>
 <p>Persisted folders选择<code>Existing volume</code>，选择上述创建的Volume，路径配置为<code>/etc/nginx/templates</code></p>
