@@ -179,6 +179,32 @@
 <p>执行<code>mdadm --create /dev/md/1 /dev/sdb1 /dev/sdc1 --level=1 --raid-devices=2</code></p>
 <p>执行<code>mdadm --detail /dev/md1</code>查看状态</p>
 <p>执行<code>mkfs.&lt;filesystem&gt; &lt;/path/to/disk/partition&gt;</code>，重新格式化分区</p>
+<h4 id="导入zfs">导入zfs</h4>
+<p>如果需要从truenas导入zfs pool</p>
+<p><a href="https://wiki.debian.org/ZFS">https://wiki.debian.org/ZFS</a></p>
+<p><a href="https://openzfs.github.io/openzfs-docs/Getting%20Started/Debian/index.html#installation">https://openzfs.github.io/openzfs-docs/Getting%20Started/Debian/index.html#installation</a></p>
+<p>run <code>nano /etc/apt/sources.list</code></p>
+<p>add <code>contrib</code></p>
+<pre tabindex="0"><code>deb http://deb.debian.org/debian/ trixie main non-free-firmware contrib
+deb-src http://deb.debian.org/debian/ trixie main non-free-firmware contrib
+</code></pre><p>run<code>nano /etc/apt/preferences.d/90_zfs</code></p>
+<pre tabindex="0"><code>Package: src:zfs-linux
+Pin: release n=trixie-backports
+Pin-Priority: 990
+</code></pre><p>run</p>
+<pre tabindex="0"><code>apt update
+apt install dpkg-dev linux-headers-generic linux-image-generic
+apt install zfs-dkms zfsutils-linux
+</code></pre><p>run<code>reboot</code></p>
+<p>test<code>zfs version</code></p>
+<p>use<code>zpool import</code>check all pool</p>
+<p>use<code>zpool import -Nf {pool name}</code>to import pool, use &lsquo;-N&rsquo; to avoid mount something to break you system</p>
+<p>run<code>zpool status</code>to check status</p>
+<p>use<code>zfs set mountpoint=none {pool name}/{path}</code>to unset mountpoint {pool name}/{path}</p>
+<p>use<code>zfs set mountpoint=/vol/test {pool name}/{path}</code>to set mountpoint {pool name}/{path} and automount</p>
+<p>mount by hand: use<code>zfs mount {pool name}/{path}</code>to mount pool</p>
+<p>unmount by hand: use<code>zfs unmount {pool name}/{path}</code>to unmount pool</p>
+<p>use<code>zpool export -f {pool name}</code>to export pool</p>
 <h4 id="挂载磁盘">挂载磁盘</h4>
 <p>由于<a href="https://www.debian.org/doc/packaging-manuals/fhs/fhs-3.0.html#mediaMountPoint">fhs</a>，新建一个<code>/vol</code>作为挂载点目录</p>
 <p>执行<code>mkdir /vol/disk1</code>创建挂载点</p>
@@ -260,6 +286,7 @@ systemctl start grafana-server
 <p>内存、CPU、网络、磁盘等监控都可以通过prometheus获取，此处不再赘述</p>
 <p>添加日志监控loki：</p>
 <p>执行<code>apt-get install loki</code></p>
+<p>执行<code>systemctl enable loki;systemctl start loki</code></p>
 <p>默认启动在本机3100端口，配置文件<code>/etc/loki/config.yml</code></p>
 <p>在grafana数据源添加loki</p>
 <p>添加定时命令产生日志：</p>
@@ -292,6 +319,7 @@ loki.write &#34;grafana_loki&#34; {
 <p>可以在<code>grafana</code>找到相关文档，在本文创建时<a href="https://grafana.com/docs/grafana/latest/alerting/configure-notifications/manage-contact-points/integrations/configure-email/">https://grafana.com/docs/grafana/latest/alerting/configure-notifications/manage-contact-points/integrations/configure-email/</a></p>
 <p>执行<code>nano /etc/grafana/grafana.ini</code></p>
 <p>查询<code>smtp</code>，配置相关字段</p>
+<p>执行<code>systemctl restart grafana-server</code></p>
 <p>在界面配置联络点，配置警告规则</p>
 <h4 id="配置ups-slave">配置UPS slave</h4>
 <p>一般只有在直连ups的机器才配置master,此处以slave为例</p>
@@ -329,9 +357,33 @@ iface bond0 inet dhcp
 <p>使用<code>cat /proc/net/bonding/bond0 |less</code>查看状态</p>
 <h4 id="配置k3s">配置k3s</h4>
 <p>前往<a href="https://docs.k3s.io/quick-start">https://docs.k3s.io/quick-start</a></p>
-<p>执行<code>curl -sfL https://get.k3s.io | sh -</code></p>
+<p>执行<code>apt install curl</code></p>
+<p>执行安装支持ipv4/ipv6的k3s</p>
+<pre tabindex="0"><code>curl -sfL https://get.k3s.io | INSTALL_K3S_EXEC=&#34;server --node-ip 2001:BBB:111:111::1 --cluster-cidr 2001:cafe:42:0::/56 --service-cidr 2001:cafe:43:1::/112&#34; sh -s -
+</code></pre><p>如果希望自行管理443/80,你需要<a href="https://github.com/k3s-io/k3s/issues/1160">移除traefik</a></p>
+<p>执行<code>kubectl -n kube-system delete helmcharts.helm.cattle.io traefik</code></p>
+<p>执行<code>service k3s stop</code></p>
+<p>执行<code>nano /etc/systemd/system/k3s.service</code>，在ExecStart添加行</p>
+<pre tabindex="0"><code>&#39;--disable traefik&#39; \
+</code></pre><p>执行<code>systemctl daemon-reload</code></p>
+<p>执行<code>rm /var/lib/rancher/k3s/server/manifests/traefik.yaml</code></p>
+<p>执行<code>service k3s start</code></p>
+<p>设置代理:</p>
+<p>执行<code>mkdir -p /etc/systemd/system/containerd.service.d/</code></p>
+<p>执行<code>/etc/systemd/system/containerd.service.d/http-proxy.conf</code></p>
+<p>写入</p>
+<pre tabindex="0"><code>[Service]
+Environment=&#34;HTTP_PROXY=http://192.168.31.1:10807&#34;
+Environment=&#34;HTTPS_PROXY=http://192.168.31.1:10807&#34;
+Environment=&#34;NO_PROXY=localhost,127.0.0.0/8,::1,172.17.0.0/16,10.0.0.0/8,192.0.0.0/8,.cluster.local&#34;
+</code></pre><p>执行<code>systemctl restart k3s.service</code></p>
 <p>安装<a href="https://docs.portainer.io/start/install-ce/server/kubernetes/baremetal">portainer</a></p>
+<p>执行<code>kubectl get sc</code>获取NAME，下文以local-path为例</p>
 <p>执行</p>
+<pre tabindex="0"><code>kubectl patch storageclass local-path -p &#39;{&#34;metadata&#34;: {&#34;annotations&#34;:{&#34;storageclass.kubernetes.io/is-default-class&#34;:&#34;true&#34;}}}&#39;
+</code></pre><p>执行</p>
+<pre tabindex="0"><code>kubectl apply -n portainer -f https://downloads.portainer.io/ce2-21/portainer.yaml
+</code></pre><p>执行</p>
 <pre tabindex="0"><code>kubectl patch deployments -n portainer portainer -p &#39;{&#34;spec&#34;: {&#34;template&#34;: {&#34;spec&#34;: {&#34;nodeSelector&#34;: {&#34;kubernetes.io/hostname&#34;: &#34;&#39;$(kubectl get pods -n portainer -o jsonpath=&#39;{ ..nodeName }&#39;)&#39;&#34;}}}}}&#39; || (echo Failed to identify current node of portainer pod; exit 1)
 </code></pre><p>服务运行于30777端口</p>
 <p>简单使用示例：</p>
@@ -421,20 +473,57 @@ iface bond0 inet dhcp
 <pre tabindex="0"><code>kubectl get pv
 kubectl delete pv {pv名称}
 </code></pre><ol start="2">
-<li>设置代理</li>
-</ol>
-<p>执行<code>mkdir -p /etc/systemd/system/containerd.service.d/</code></p>
-<p>执行<code>/etc/systemd/system/containerd.service.d/http-proxy.conf</code></p>
-<p>写入</p>
-<pre tabindex="0"><code>[Service]
-Environment=&#34;HTTP_PROXY=http://192.168.31.1:10807&#34;
-Environment=&#34;HTTPS_PROXY=http://192.168.31.1:10807&#34;
-Environment=&#34;NO_PROXY=localhost,127.0.0.0/8,::1,172.17.0.0/16,10.0.0.0/8,192.0.0.0/8,.cluster.local&#34;
-</code></pre><p>执行<code>systemctl restart k3s.service</code></p>
-<ol start="3">
 <li>部署nginx</li>
 </ol>
-<p>进入Application</p>
+<pre tabindex="0"><code>apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: gw-deployment #name
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: gw #name
+  template:
+    metadata:
+      labels:
+        app: gw
+    spec:
+      volumes:
+        - name: gw #volName
+          persistentVolumeClaim:
+            claimName: gw #volName
+      containers:
+      - name: debian
+        image: debian:latest
+        env:
+        - name: DEMO_GREETING
+          value: &#34;Hello from the environment&#34;
+        volumeMounts:
+          - mountPath: /caddy #mountpath
+            name: gw #volName
+        command: [ &#34;/bin/bash&#34;, &#34;-c&#34;, &#34;--&#34; ]
+        args: [ &#34;/caddy/run.sh&#34; ]
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: gw-service
+spec:
+  selector:
+    app: gw
+  ports:
+    - name: port-1
+      port: 10851
+      targetPort: 10851
+    - name: port-2
+      port: 10852
+      targetPort: 10852
+    - name: port-3
+      port: 10902
+      targetPort: 10902
+  type: LoadBalancer
+</code></pre><p>进入Application</p>
 <p>点击Add with from</p>
 <p>Name、Image填写<code>nginx</code></p>
 <p>Persisted folders选择<code>Existing volume</code>，选择上述创建的Volume，路径配置为<code>/etc/nginx/templates</code></p>
@@ -727,6 +816,7 @@ Environment=&#34;NO_PROXY=localhost,127.0.0.0/8,::1,172.17.0.0/16,10.0.0.0/8,192
                 <li><a href="#检查磁盘状态">检查磁盘状态</a></li>
                 <li><a href="#为磁盘重新分区">为磁盘重新分区</a></li>
                 <li><a href="#创建raid1">创建raid1</a></li>
+                <li><a href="#导入zfs">导入zfs</a></li>
                 <li><a href="#挂载磁盘">挂载磁盘</a></li>
                 <li><a href="#配置smb">配置smb</a></li>
                 <li><a href="#配置监控">配置监控</a></li>
