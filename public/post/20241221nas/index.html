@@ -108,8 +108,15 @@
         </div>
         
         <div class="post-content">
-            <h3 id="说明">说明</h3>
-<p>此文为顺序操作记录</p>
+            <h3 id="简介">简介</h3>
+<p>在去年6月，曾写过一篇关于部署truenas的记录，踩了truenas的若干坑。</p>
+<p>在最近，truenas重启后，容器不再能启动，搜索得到的结果都是无法恢复。</p>
+<p>加之truenas升级也会带来风险，truenas总有些遗留未修复的坑。</p>
+<p>终于决定，不再使用truenas，直接从debian开始配置，以得到对系统的完全控制。</p>
+<p>但更加自由的同时，可能会带来更多的风险，本文尽量在可能导致数据丢失的时候进行提醒。</p>
+<p>以下为部署记录：</p>
+<h3 id="说明">说明</h3>
+<p>此文为顺序操作记录，如果对linux足够熟悉，应该可以在1h内完成本文配置，实现以下功能。</p>
 <ul>
 <li>Web状态监控</li>
 <li>SMB共享</li>
@@ -123,7 +130,7 @@
 <ul>
 <li>正常网络环境</li>
 <li>另一台正常运行电脑</li>
-<li>u盘</li>
+<li>无用u盘</li>
 <li>显示设备</li>
 <li>键盘</li>
 <li>组装好的NAS硬件</li>
@@ -133,6 +140,8 @@
 <p>使用安装盘制作工具将镜像烧录入u盘</p>
 <h3 id="安装debian">安装debian</h3>
 <p>将u盘插入NAS,配置从u盘启动</p>
+<p>在进行安装分区时，本处直接使用一个空硬盘。</p>
+<p>！需要注意选错安装到数据盘，数据将丢失。</p>
 <p>在选择桌面环境时，不安装桌面环境，安装<code>ssh服务器</code></p>
 <p>配置http代理或者镜像使得安装速度加快</p>
 <p>下文安装时默认用户为<code>xxx</code></p>
@@ -160,9 +169,11 @@
 <p>执行<code>apt install smartmontools</code></p>
 <p>执行<code>smartctl -a /dev/nvme0|less</code>查看指定设备smart状态</p>
 <h4 id="为磁盘重新分区">为磁盘重新分区</h4>
+<p>！对磁盘进行分区，将会丢失数据</p>
 <p>执行<code>fdisk /dev/sdb</code></p>
 <p>常用命令：</p>
 <ul>
+<li>g：重新创建gpt记录</li>
 <li>p：查看分区</li>
 <li>n：新建分区</li>
 <li>d：删除分区</li>
@@ -174,10 +185,12 @@
 <p>卸载raid：<code>mdadm --stop /dev/mdX</code></p>
 <p>卸载vg：<code>vgremove {vgname}</code></p>
 <p>通知系统磁盘卸载：<code>echo 1 | sudo tee /sys/block/(whatever)/device/delete</code></p>
+<p>！格式化分区，将会丢失数据</p>
 <p>执行<code>mkfs.&lt;filesystem&gt; &lt;/path/to/disk/partition&gt;</code>，重新格式化分区</p>
 <h4 id="创建raid1">创建raid1</h4>
 <p>执行<code>mdadm --create /dev/md/1 /dev/sdb1 /dev/sdc1 --level=1 --raid-devices=2</code></p>
 <p>执行<code>mdadm --detail /dev/md1</code>查看状态</p>
+<p>！格式化分区，将会丢失数据</p>
 <p>执行<code>mkfs.&lt;filesystem&gt; &lt;/path/to/disk/partition&gt;</code>，重新格式化分区</p>
 <h4 id="导入zfs">导入zfs</h4>
 <p>如果需要从truenas导入zfs pool</p>
@@ -198,10 +211,14 @@ apt install zfs-dkms zfsutils-linux
 </code></pre><p>run<code>reboot</code></p>
 <p>test<code>zfs version</code></p>
 <p>use<code>zpool import</code>check all pool</p>
+<p>！不使用N选项，将在导入时自动挂载，可能会挂载到系统路径，损坏系统</p>
 <p>use<code>zpool import -Nf {pool name}</code>to import pool, use &lsquo;-N&rsquo; to avoid mount something to break you system</p>
 <p>run<code>zpool status</code>to check status</p>
+<p>使用<code>zfs get all</code>获取zpool里的所有挂载路径，建议先行取消所有挂载点：</p>
 <p>use<code>zfs set mountpoint=none {pool name}/{path}</code>to unset mountpoint {pool name}/{path}</p>
+<p>！配置挂载路径，将会自动挂载，可能会损坏系统</p>
 <p>use<code>zfs set mountpoint=/vol/test {pool name}/{path}</code>to set mountpoint {pool name}/{path} and automount</p>
+<p>配置之后，应该会在重启时自动挂载。</p>
 <p>mount by hand: use<code>zfs mount {pool name}/{path}</code>to mount pool</p>
 <p>unmount by hand: use<code>zfs unmount {pool name}/{path}</code>to unmount pool</p>
 <p>use<code>zpool export -f {pool name}</code>to export pool</p>
@@ -227,6 +244,7 @@ apt install zfs-dkms zfsutils-linux
 <p>通知系统重新扫描：<code>echo &quot;0 0 0&quot; &gt;/sys/class/scsi_host/host(whatever)/scan</code></p>
 <p>配置自动挂载：</p>
 <p>执行<code>blkid</code>查询磁盘id、及文件系统类型</p>
+<p>！错误的fstab将会导致系统不能正常启动</p>
 <p>执行<code>nano /etc/fstab</code></p>
 <p>添加自定义注释，写入以下内容（注意自行替换关键字段）</p>
 <pre tabindex="0"><code># &lt;file system&gt; &lt;mount point&gt;   &lt;type&gt;  &lt;options&gt;       &lt;dump&gt;  &lt;pass&gt;
@@ -283,8 +301,32 @@ systemctl start grafana-server
 <p>执行<code>apt-get install prometheus prometheus-node-exporter</code></p>
 <p>默认启动在本机9090端口， 配置文件<code>/etc/prometheus/prometheus.yml</code></p>
 <p>在grafana数据源添加prometheus</p>
-<p>内存、CPU、网络、磁盘等监控都可以通过prometheus获取，此处不再赘述</p>
-<p>添加日志监控loki：</p>
+<p>内存、CPU、网络、磁盘等监控都可以通过prometheus获取，此处不再赘述，仅提供一些prometheus常用code,可自行搜索</p>
+<ul>
+<li>Netstat(TCP UDP连接数)</li>
+</ul>
+<pre tabindex="0"><code>node_netstat_Tcp_CurrEstab
+
+irate(node_netstat_Udp_InDatagrams[5m])+irate(node_netstat_Udp_InErrors[5m])+irate(node_netstat_Udp_OutDatagrams[5m])+irate(node_netstat_Udp_NoPorts[5m])
+</code></pre><ul>
+<li>NetworkIO(网络流量)</li>
+</ul>
+<pre tabindex="0"><code>sum(irate(node_network_receive_bytes_total{device=~&#34;^en.*&#34;}[1m]))
+
+sum(irate(node_network_transmit_bytes_total{device=~&#34;^en.*&#34;}[1m]))
+</code></pre><ul>
+<li>cpu</li>
+</ul>
+<pre tabindex="0"><code>100 - (avg(irate(node_cpu_seconds_total{mode=&#34;idle&#34;}[30m])) * 100)
+</code></pre><ul>
+<li>men（内存）</li>
+</ul>
+<pre tabindex="0"><code>(node_memory_MemTotal_bytes-node_memory_MemAvailable_bytes)/node_memory_MemTotal_bytes*100
+</code></pre><ul>
+<li>disk</li>
+</ul>
+<pre tabindex="0"><code>100 - ((node_filesystem_avail_bytes{mountpoint=&#34;/vol/system&#34;,fstype!=&#34;rootfs&#34;} * 100) / node_filesystem_size_bytes{mountpoint=&#34;/vol/system&#34;,fstype!=&#34;rootfs&#34;})
+</code></pre><p>添加日志监控loki：</p>
 <p>执行<code>apt-get install loki</code></p>
 <p>执行<code>systemctl enable loki;systemctl start loki</code></p>
 <p>默认启动在本机3100端口，配置文件<code>/etc/loki/config.yml</code></p>
@@ -314,7 +356,9 @@ loki.write &#34;grafana_loki&#34; {
     }
 }
 </code></pre><p>执行<code>systemctl start alloy</code></p>
-<h4 id="配置警告">配置警告</h4>
+<p>日志的grafana示例：</p>
+<pre tabindex="0"><code>{filename=~&#34;/var/log/custom/smart/.*.log&#34;} | logfmt time | logfmt dev | logfmt msg
+</code></pre><h4 id="配置警告">配置警告</h4>
 <p>警告基于<code>Grafana</code>，此处以邮件为例</p>
 <p>可以在<code>grafana</code>找到相关文档，在本文创建时<a href="https://grafana.com/docs/grafana/latest/alerting/configure-notifications/manage-contact-points/integrations/configure-email/">https://grafana.com/docs/grafana/latest/alerting/configure-notifications/manage-contact-points/integrations/configure-email/</a></p>
 <p>执行<code>nano /etc/grafana/grafana.ini</code></p>
@@ -353,7 +397,8 @@ iface bond0 inet dhcp
     bond-miimon 100
     bond-downdelay 200
     bond-updelay 200
-</code></pre><p>执行命令<code>reboot</code></p>
+</code></pre><p>！错误的配置可能让你无法通过网络继续操作nas</p>
+<p>执行命令<code>reboot</code></p>
 <p>使用<code>cat /proc/net/bonding/bond0 |less</code>查看状态</p>
 <h4 id="配置k3s">配置k3s</h4>
 <p>前往<a href="https://docs.k3s.io/quick-start">https://docs.k3s.io/quick-start</a></p>
@@ -387,12 +432,11 @@ Environment=&#34;NO_PROXY=localhost,127.0.0.0/8,::1,172.17.0.0/16,10.0.0.0/8,192
 <pre tabindex="0"><code>kubectl patch deployments -n portainer portainer -p &#39;{&#34;spec&#34;: {&#34;template&#34;: {&#34;spec&#34;: {&#34;nodeSelector&#34;: {&#34;kubernetes.io/hostname&#34;: &#34;&#39;$(kubectl get pods -n portainer -o jsonpath=&#39;{ ..nodeName }&#39;)&#39;&#34;}}}}}&#39; || (echo Failed to identify current node of portainer pod; exit 1)
 </code></pre><p>服务运行于30777端口</p>
 <p>简单使用示例：</p>
-<p>快速上手：</p>
-<ol>
-<li>关于接下来将用到的持久卷</li>
-</ol>
+<h4 id="快速上手k3s">快速上手k3s</h4>
+<p>关于接下来将用到的持久卷：</p>
 <p>执行<code>kubectl describe nodes | grep kubernetes.io/hostname</code>得到<code>{hostname}</code>，配置中需要</p>
-<p>界面删除后，执行，删除pv</p>
+<p>关于移除持久卷：</p>
+<p>界面删除后，执行，删除pv，删除本文中示例的持久卷并不会删除对应的文件。</p>
 <pre tabindex="0"><code>kubectl get pv
 kubectl delete pv {pv名称}
 </code></pre><ol start="2">
@@ -863,6 +907,7 @@ kubectl delete pv {pv名称}
       <ul>
         <li>
           <ul>
+            <li><a href="#简介">简介</a></li>
             <li><a href="#说明">说明</a></li>
             <li><a href="#必要条件">必要条件</a></li>
             <li><a href="#制作安装盘">制作安装盘</a></li>
@@ -883,6 +928,7 @@ kubectl delete pv {pv名称}
                 <li><a href="#配置ups-slave">配置UPS slave</a></li>
                 <li><a href="#配置lacp">配置lacp</a></li>
                 <li><a href="#配置k3s">配置k3s</a></li>
+                <li><a href="#快速上手k3s">快速上手k3s</a></li>
               </ul>
             </li>
           </ul>
