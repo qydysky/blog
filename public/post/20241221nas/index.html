@@ -192,6 +192,39 @@
 <p>执行<code>mdadm --detail /dev/md1</code>查看状态</p>
 <p>！格式化分区，将会丢失数据</p>
 <p>执行<code>mkfs.&lt;filesystem&gt; &lt;/path/to/disk/partition&gt;</code>，重新格式化分区</p>
+<h4 id="挂载磁盘">挂载磁盘</h4>
+<p>由于<a href="https://www.debian.org/doc/packaging-manuals/fhs/fhs-3.0.html#mediaMountPoint">fhs</a>，新建一个<code>/vol</code>作为挂载点目录</p>
+<p>执行<code>mkdir /vol/disk1</code>创建挂载点</p>
+<p>手动挂载分区：</p>
+<p>执行<code>mount /dev/sda1 /vol/disk1</code></p>
+<p>情况：</p>
+<ul>
+<li>
+<p>提示<code>unknown filesystem type 'linux_raid_member'</code>时，说明此磁盘为raid磁盘</p>
+<p>使用<code>cat /proc/mdstat</code>查看是否以自动安装</p>
+<p>如没有使用<code>mdadm</code>命令安装</p>
+</li>
+<li>
+<p>提示<code>unknown filesystem type 'LVM2_member'</code>时</p>
+<p>使用<code>vgdisplay</code>查看vgName</p>
+<p>使用<code>fdisk -l | less</code>查看对应的mapper</p>
+<p>使用<code>mount /dev/mapper/vg288-lv4 /vol/disk1</code>挂载</p>
+</li>
+</ul>
+<p>通知系统重新扫描：<code>echo &amp;quot;0 0 0&amp;quot; &gt;/sys/class/scsi_host/host(whatever)/scan</code></p>
+<p>配置自动挂载：</p>
+<p>执行<code>blkid</code>查询磁盘id、及文件系统类型</p>
+<p>！错误的fstab将会导致系统不能正常启动</p>
+<p>执行<code>nano /etc/fstab</code></p>
+<p>添加自定义注释，写入以下内容（注意自行替换关键字段）</p>
+<pre tabindex="0"><code># &lt;file system&gt; &lt;mount point&gt;   &lt;type&gt;  &lt;options&gt;       &lt;dump&gt;  &lt;pass&gt;
+UUID=3b0d8f07-d5fa-4649-8aa4-f0e08b92ee08 /vol/disk1 ext4 errors=continue 0 2
+</code></pre><p>其中：</p>
+<p>errors=continue：失败跳过，不影响系统系统启动</p>
+<p>dump：是否转储，0否</p>
+<p>pass: 挂载顺序，2其他文件系统</p>
+<p>更多信息查看<code>man mount</code>说明</p>
+<p>执行<code>systemctl daemon-reload</code>加载变动</p>
 <h4 id="导入zfs">导入zfs</h4>
 <p>如果需要从truenas导入zfs pool</p>
 <p><a href="https://wiki.debian.org/ZFS">https://wiki.debian.org/ZFS</a></p>
@@ -897,6 +930,7 @@ kubectl delete pv {pv名称}
                 <li><a href="#检查磁盘状态">检查磁盘状态</a></li>
                 <li><a href="#为磁盘重新分区">为磁盘重新分区</a></li>
                 <li><a href="#创建raid1">创建raid1</a></li>
+                <li><a href="#挂载磁盘">挂载磁盘</a></li>
                 <li><a href="#导入zfs">导入zfs</a></li>
                 <li><a href="#配置smb">配置smb</a></li>
                 <li><a href="#配置监控">配置监控</a></li>
