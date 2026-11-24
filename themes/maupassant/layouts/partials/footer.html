@@ -121,10 +121,10 @@
                 }
             };
     </script>
-    <script src='/js/mathjax/2.7.5/MathJax.js?config=TeX-MML-AM_CHTML' async></script>
+    <script src='{{"js/mathjax/2.7.5/MathJax.js?config=TeX-MML-AM_CHTML" | relURL}}' async></script>
     
     {{- if .Site.Params.fancybox -}}
-        <script src="js/fancybox/3.5.7/jquery.fancybox.min.js"></script>
+        <script src='{{"js/fancybox/3.5.7/jquery.fancybox.min.js" | relURL }}'></script>
     {{- end -}}
 {{ end }}
 

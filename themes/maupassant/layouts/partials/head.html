@@ -44,7 +44,7 @@
     {{ range .AlternativeOutputFormats -}}
         {{ printf `<link rel="%s" type="%s" href="%s" title="%s" />` .Rel .MediaType.Type .Permalink $.Site.Title | safeHTML }}
     {{ end -}}
-    <script type="text/javascript" src="js/jquery/3.6.0/jquery.min.js"></script>
+    <script type="text/javascript" src='{{"js/jquery/3.6.0/jquery.min.js" | relURL}}'></script>
 
     {{ with resources.Get "main.js" | resources.Fingerprint "md5" }}
         <script src="{{ .RelPermalink }}" integrity="{{ .Data.Integrity }}"></script>
@@ -55,7 +55,7 @@
     {{ end }}
     
     {{if .Site.Params.fancybox }}
-        <link href="css/fancybox/3.5.7/jquery.fancybox.min.css" rel="stylesheet">
+        <link href='{{"css/fancybox/3.5.7/jquery.fancybox.min.css" | relURL}}' rel="stylesheet">
     {{ end }}
     
     <!-- custom css -->
