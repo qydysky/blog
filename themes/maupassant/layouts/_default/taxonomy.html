@@ -28,7 +28,7 @@
         <div class="index-meta meta-category">
             |
             {{ range . }}
-            <a href='{{ "categories/" | relURL }}{{ . | urlize }}'>{{ . }}</a>
+            <a href='{{ "categories/" }}{{ . | urlize }}'>{{ . }}</a>
             {{ end }}
         </div>
         {{ end }}
