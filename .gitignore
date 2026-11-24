@@ -1,7 +1,3 @@
-archetypes/*
-assets/*
-content/*
-themes/*
 config.toml
 build.sh
 hugo
