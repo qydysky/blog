@@ -14,7 +14,7 @@
         {{ range .Pages }}
         <li>
             <span class="date">{{ .Date.Format "2006/01/02" }}</span>
-            <a href="{{ .Permalink | relURL }}" title="{{ .Title }}">{{ .Title }}</a>
+            <a href="{{ .Permalink | absURL }}" title="{{ .Title }}">{{ .Title }}</a>
         </li>
         {{ end }}
     </ul>
