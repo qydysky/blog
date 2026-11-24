@@ -15,7 +15,7 @@
         <div class="index-meta">
             <span>|</span>
             {{ range . }}
-            <span class="meta-category"><a href='{{ "categories/" }}{{ . | urlize }}'>{{ . }}</a></span>
+            <span class="meta-category"><a href='{{ "categories/" | relURL }}{{ . | urlize }}'>{{ . }}</a></span>
             {{ end }}
         </div>
         {{ end }}
