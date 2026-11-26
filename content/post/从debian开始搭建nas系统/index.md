@@ -245,6 +245,14 @@ unmount by hand: use`zfs unmount {pool name}/{path}`to unmount pool
 
 use`zpool export -f {pool name}`to export pool
 
+更换池里的磁盘：
+
+- `zpool status`获取磁盘ID
+- `zpool offline <pool_name> <old_disk_identifier>`卸载磁盘
+- 停机更换磁盘
+- `ls -l /dev/disk/by-id/`获取新磁盘ID
+- `zpool replace <pool_name> <old_disk_identifier> /dev/disk/by-id/<new_disk_id>`更换磁盘
+
 #### 配置smb
 执行`apt install samba`安装`smb`
 
